@@ -48,7 +48,7 @@ function loadGame() {
 }
 
 /* ============================================================
-   ORDERS — multiple at once
+   ORDERS, multiple at once
    ============================================================ */
 let orderSeq = 0;
 const DUMMY_PLATE = blankPlate();
@@ -367,7 +367,7 @@ function updateSauceUI() {
     ? `TO ${o.cust.name.toUpperCase()}'S PLATE`
     : 'TO PLATE';
 }
-// transfer wings from the bowl onto the SELECTED order's plate — only what that
+// transfer wings from the bowl onto the SELECTED order's plate, only what that
 // order still needs, so a big saucy batch can be split across several plates.
 function sendToPlate() {
   const o = selOrder();
@@ -414,7 +414,7 @@ function trashBowl() {
 }
 
 /* ============================================================
-   BUILD STATION LOGIC — operates on the selected order's plate
+   BUILD STATION LOGIC, operates on the selected order's plate
    ============================================================ */
 function uiAddSide(id) {
   const o = selOrder();
@@ -739,20 +739,66 @@ $('serveBtn').onclick = serve;
 $('trashPlateBtn').onclick = clearPlate;
 $('takeOrderBtn').onclick = takeOrder;
 
-/* ---- main menu navigation ---- */
-function openMenuScreen(id) {
+/* ---- menus: title menu, shop & how-to, and an always-on pause menu ---- */
+let menuReturn = 'titleScreen';   // where a sub-screen's BACK button returns to
+function openSub(id, from) {
   AudioFX.init(); AudioFX.click();
+  menuReturn = from;
   if (id === 'menuShop') { renderUpgrades('shopGrid'); $('shopMoney').textContent = fmt$(G.money); }
-  $('titleScreen').classList.add('hidden');
+  $(from).classList.add('hidden');
   $(id).classList.remove('hidden');
 }
-$('menuShopBtn').onclick = () => openMenuScreen('menuShop');
-$('menuHelpBtn').onclick = () => openMenuScreen('menuHelp');
-$('menuCreditsBtn').onclick = () => openMenuScreen('menuCredits');
+$('menuShopBtn').onclick  = () => openSub('menuShop', 'titleScreen');
+$('menuHelpBtn').onclick  = () => openSub('menuHelp', 'titleScreen');
+$('pauseShopBtn').onclick = () => openSub('menuShop', 'pauseMenu');
+$('pauseHelpBtn').onclick = () => openSub('menuHelp', 'pauseMenu');
 document.querySelectorAll('.menuBack').forEach(b => b.onclick = () => {
   AudioFX.click();
   $(b.dataset.menu).classList.add('hidden');
+  $(menuReturn).classList.remove('hidden');
+});
+
+// the menu/shop is reachable any time: pause the day and pop it open
+function openPause() {
+  if (G.state !== 'day') return;
+  AudioFX.init(); AudioFX.click();
+  G._resumeState = G.state;
+  G.state = 'paused';
+  $('takeOrderBtn').classList.remove('show');
+  $('pauseMenu').classList.remove('hidden');
+}
+function closePause() {
+  $('pauseMenu').classList.add('hidden');
+  if (G._resumeState) { G.state = G._resumeState; G._resumeState = null; }
+}
+function resetToTitle() {
+  G.state = 'title';
+  [...G.queue, ...G.leaving, ...G.orders.map(o => o.cust)].forEach(c => c.dispose());
+  G.queue = []; G.leaving = []; G.orders = []; G.selId = null;
+  bowlWings.forEach(w => SAUCE_ST.wingsGroup.remove(w)); bowlWings.length = 0;
+  G.bowl = { count:0, cook:0, sauce:null, coat:0 };
+  SAUCE_ST.liquid.visible = false;
+  renderTickets(); renderPlate(null);
+  $('bubble').classList.remove('show');
+  AudioFX.sizzleOff();
+  if (loadGame()) $('startBtn').textContent = `CONTINUE, DAY ${G.day}`;
+  goView('title', .6);
   $('titleScreen').classList.remove('hidden');
+}
+$('menuOpenBtn').onclick = openPause;
+$('resumeBtn').onclick = () => { AudioFX.click(); closePause(); };
+$('quitBtn').onclick = () => {
+  AudioFX.click();
+  saveGame();
+  $('pauseMenu').classList.add('hidden');
+  G._resumeState = null;
+  resetToTitle();
+};
+addEventListener('keydown', e => {
+  if (e.code === 'Escape') {
+    if (G.state === 'day') openPause();
+    else if (G.state === 'paused') closePause();
+  }
 });
 
 /* title screen */

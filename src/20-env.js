@@ -35,7 +35,7 @@ const DIPS = [
   { id:'sriracha',name:'Sriracha Mayo',  color:0xe8763a, day:7 },
   { id:'aioli',   name:'Garlic Aioli',   color:0xeae2c0, day:9 },
 ];
-// garnishes — the finishing touch that makes plating a craft
+// garnishes, the finishing touch that makes plating a craft
 const GARNISHES = [
   { id:'none',    name:'No garnish', color:0x888888, day:1 },
   { id:'lemon',   name:'Lemon Wedge', color:0xf2e24a, day:2 },
@@ -48,7 +48,7 @@ const dipById     = id => DIPS.find(s => s.id === id);
 const garnishById = id => GARNISHES.find(s => s.id === id);
 
 /* ============================================================
-   ENVIRONMENT — the wing shop, seen from behind the counter.
+   ENVIRONMENT, the wing shop, seen from behind the counter.
    The owner works at a long prep counter (z ≈ -0.3) and looks
    out over the serving counter (z = 2.6) into the dining room.
    ============================================================ */
@@ -150,7 +150,7 @@ scene.add(floor);
 const wallMat = new THREE.MeshStandardMaterial({ color:0x4a505c, roughness:.9 });
 const wallMat2 = new THREE.MeshStandardMaterial({ color:0x8a2f22, roughness:.9 });
 // a solid wall panel (built in its own XY plane, extruded through `thickness`)
-// with real rectangular openings cut out — these become the window reveals.
+// with real rectangular openings cut out, these become the window reveals.
 function makeWallWithHoles(w, h, thickness, holes) {
   const shape = new THREE.Shape();
   shape.moveTo(-w/2, -h/2); shape.lineTo(w/2, -h/2);
@@ -176,7 +176,7 @@ const frontWall = makeWallWithHoles(30, 8, .4,
   [-11.5, -5, 5].map(x => ({ x, y: -0.4, w: 3.72, h: 2.72 })));
 frontWall.position.set(0, 4, 17.2);
 scene.add(frontWall);
-// side walls — local x maps to world z (z = 6 and 11), so x = ±(z-4)
+// side walls, local x maps to world z (z = 6 and 11), so x = ±(z-4)
 const leftWall = makeWallWithHoles(26, 8, .4, [6, 11].map(z => ({ x: z-4, y: -0.4, w: 3.32, h: 2.52 })));
 leftWall.position.set(-14.5, 4, 4); leftWall.rotation.y = -Math.PI/2;
 scene.add(leftWall);
@@ -252,7 +252,7 @@ function drawCity() {
       g.globalAlpha = 1; g.shadowBlur = 0;
     }
   });
-  // atmospheric haze settling over the rooftops — pushes the city back
+  // atmospheric haze settling over the rooftops, pushes the city back
   const haze = g.createLinearGradient(0, hz - 70, 0, hz);
   haze.addColorStop(0, 'rgba(74,52,58,0)'); haze.addColorStop(1, 'rgba(120,78,70,.35)');
   g.fillStyle = haze; g.fillRect(0, hz - 70, W, 70);
@@ -363,9 +363,9 @@ function addWindow(x, y, z, w, h, rotY) {
   grp.add(box(fb, h + fb*2, .2, frameMat, w/2 + fb/2, 0, fz));   // right
   scene.add(grp);
 }
-// front-wall windows — room face is z = 17.0
+// front-wall windows, room face is z = 17.0
 [-11.5, -5, 5].forEach(x => addWindow(x, 3.6, 17.0, 3.6, 2.6, Math.PI));
-// side-wall windows — room faces are x = ∓14.3
+// side-wall windows, room faces are x = ∓14.3
 [6, 11].forEach(z => addWindow(-14.3, 3.6, z, 3.2, 2.4, Math.PI/2));
 [6, 11].forEach(z => addWindow(14.3, 3.6, z, 3.2, 2.4, -Math.PI/2));
 
@@ -410,7 +410,7 @@ function drawMenu() {
   menuTex.needsUpdate = true;
 }
 drawMenu();
-// canvas text draws before webfonts arrive — redraw once they do
+// canvas text draws before webfonts arrive, redraw once they do
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawNeon(); drawMenu(); });
 const menuMat = new THREE.MeshStandardMaterial({ map: menuTex, roughness:.9 });
 [-8.3, 8.3].forEach(x => {
@@ -495,7 +495,7 @@ const FRYER = { baskets: [] };
     wingsGroup.position.y = .02;
     bGroup.add(wingsGroup);
     // downY chosen so wings straddle the oil surface (y≈2.56): bottoms submerge
-    // (hidden by the opaque oil), tops poke out — they read as actually frying.
+    // (hidden by the opaque oil), tops poke out, they read as actually frying.
     const upY = 3.3, downY = 2.55;
     bGroup.position.set(fx+dx, upY, fz);
     scene.add(bGroup);
@@ -604,7 +604,7 @@ const BUILD_ST = { plateGroup: null, wingsGroup: null, sidesGroup: null, dipGrou
   registerClick(garnishGroup, () => uiSetGarnish('none'),
     () => curView === 'build' && curPlate().garnish && curPlate().garnish !== 'none', 'Remove garnish');
 
-  // side bins — a centered grid behind the plate (grows to two rows)
+  // side bins, a centered grid behind the plate (grows to two rows)
   const sPerRow = 4;
   SIDES.forEach((s, i) => {
     const row = Math.floor(i / sPerRow), col = i % sPerRow;
@@ -626,7 +626,7 @@ const BUILD_ST = { plateGroup: null, wingsGroup: null, sidesGroup: null, dipGrou
     registerClick(bin, () => uiAddSide(s.id),
       () => curView === 'build' && bin.visible, () => `${s.name} +1`);
   });
-  // dip cups — right of the plate, in short columns
+  // dip cups, right of the plate, in short columns
   DIPS.filter(d => d.id !== 'none').forEach((d, i) => {
     const col = Math.floor(i / 3), row = i % 3;
     const cup = makeDipCup(d);
@@ -636,7 +636,7 @@ const BUILD_ST = { plateGroup: null, wingsGroup: null, sidesGroup: null, dipGrou
     registerClick(cup, () => uiSetDip(d.id),
       () => curView === 'build' && cup.visible, `${d.name} dip`);
   });
-  // garnish caddy — left of the plate, the finishing touch
+  // garnish caddy, left of the plate, the finishing touch
   GARNISHES.filter(gn => gn.id !== 'none').forEach((gn, i) => {
     const tray = new THREE.Group();
     tray.add(cyl(.2, .17, .1, M.steel, 0, .05, 0));

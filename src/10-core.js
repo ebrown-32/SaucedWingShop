@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 /* ============================================================
-   CORE — renderer, camera, tweens, input, audio, particles
+   CORE, renderer, camera, tweens, input, audio, particles
    ============================================================ */
 const $ = id => document.getElementById(id);
 const rand = (a=1, b) => b === undefined ? Math.random()*a : a + Math.random()*(b-a);
@@ -70,7 +70,7 @@ function popIn(obj, scale=1, dur=.5) {
   tween(dur, k => obj.scale.setScalar(scale*k), { ease: Ease.outBack });
 }
 
-/* ---------- camera views (owner POV — facing the dining room) ---------- */
+/* ---------- camera views (owner POV, facing the dining room) ---------- */
 const VIEWS = {
   title:   { pos: new THREE.Vector3(12, 7.5, 14),  tgt: new THREE.Vector3(0, 2.4, 0) },
   counter: { pos: new THREE.Vector3(0, 3.8, -1.5), tgt: new THREE.Vector3(0, 1.85, 6) },
