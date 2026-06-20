@@ -10,10 +10,16 @@ const pick = arr => arr[Math.floor(Math.random()*arr.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b-a)*t;
 
-const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true, preserveDrawingBuffer: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// coarse pointer or a small viewport means phone/tablet: scale the renderer
+// down and lighten effects so the game stays smooth on mobile GPUs
+const IS_TOUCH = matchMedia('(pointer:coarse)').matches;
+const IS_MOBILE = IS_TOUCH || Math.min(innerWidth, innerHeight) < 560;
+const FX = IS_MOBILE ? 0.5 : 1;   // global particle/effect budget scale
+
+const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: !IS_MOBILE, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, IS_MOBILE ? 1.6 : 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = IS_MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.3;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -26,12 +32,22 @@ const camera = new THREE.PerspectiveCamera(46, innerWidth/innerHeight, 0.1, 100)
 camera.position.set(0, 7, 18);
 const camTarget = new THREE.Vector3(0, 2, 0);
 
+// keep a roughly constant *horizontal* field of view so wide stations stay in
+// frame on tall portrait phones (vertical fov widens as the screen narrows)
 function resize() {
-  camera.aspect = innerWidth/innerHeight;
+  const aspect = innerWidth/innerHeight;
+  camera.aspect = aspect;
+  let vfov = 46 * Math.PI/180;
+  const minHFov = 60 * Math.PI/180;
+  const hfov = 2*Math.atan(Math.tan(vfov/2)*aspect);
+  if (hfov < minHFov) vfov = 2*Math.atan(Math.tan(minHFov/2)/aspect);
+  camera.fov = clamp(vfov*180/Math.PI, 40, 80);
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 }
-addEventListener('resize', resize); resize();
+addEventListener('resize', resize);
+addEventListener('orientationchange', () => setTimeout(resize, 200));
+resize();
 
 /* ---------- tween system ---------- */
 const tweens = [];
@@ -78,6 +94,14 @@ const VIEWS = {
   sauce:   { pos: new THREE.Vector3(0, 4.5, -3.6), tgt: new THREE.Vector3(0, 1.4, 0) },
   build:   { pos: new THREE.Vector3(6.4, 4.5, -3.6), tgt: new THREE.Vector3(6.35, 1.4, 0) },
 };
+// on mobile the wider fov zooms out, so dolly the work-station cameras in a bit
+// to enlarge the tap targets, and lift the aim on sauce/build so the pots and
+// bins (which sit behind the bowl/plate) stay comfortably in frame
+if (IS_MOBILE) {
+  VIEWS.sauce.tgt.y += .28; VIEWS.build.tgt.y += .28;
+  const dolly = { counter: .05, fry: .18, sauce: .14, build: .16 };
+  for (const k in dolly) VIEWS[k].pos.lerp(VIEWS[k].tgt, dolly[k]);
+}
 let curView = 'title';
 // free-look: drag the canvas to glance around the shop from where you stand
 const look = { yaw: 0, pitch: 0, yawT: 0, pitchT: 0 };
@@ -123,7 +147,7 @@ function removeClickable(mesh) {
   const i = clickables.findIndex(c => c.mesh === mesh);
   if (i >= 0) clickables.splice(i, 1);
 }
-function pickClickable(clientX, clientY) {
+function rayHitAt(clientX, clientY) {
   pointer.set((clientX/innerWidth)*2-1, -(clientY/innerHeight)*2+1);
   raycaster.setFromCamera(pointer, camera);
   for (const c of clickables) {
@@ -132,17 +156,30 @@ function pickClickable(clientX, clientY) {
   }
   return null;
 }
+// pick a clickable at the tap point, with a forgiving radius so small 3D
+// targets (sauce pots, bins) are easy to hit with a fingertip
+function pickClickable(clientX, clientY, fat = false) {
+  const direct = rayHitAt(clientX, clientY);
+  if (direct || !fat) return direct;
+  const r = IS_TOUCH ? 26 : 12;
+  for (let a = 0; a < Math.PI*2; a += Math.PI/4) {
+    const hit = rayHitAt(clientX + Math.cos(a)*r, clientY + Math.sin(a)*r);
+    if (hit) return hit;
+  }
+  return null;
+}
+const TAP_SLOP = IS_TOUCH ? 12 : 6;   // fingers wobble more than a mouse
 const drag = { down: false, x: 0, y: 0, moved: false, hit: null, tossY: 0 };
 addEventListener('pointerdown', e => {
   if (e.target !== $('c')) return;
   drag.down = true; drag.moved = false;
   drag.x = e.clientX; drag.y = e.clientY; drag.tossY = e.clientY;
-  drag.hit = pickClickable(e.clientX, e.clientY);
+  drag.hit = pickClickable(e.clientX, e.clientY, true);
 });
 addEventListener('pointermove', e => {
   if (drag.down) {
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < TAP_SLOP) return;
     if (drag.hit && drag.hit.dragToss) {
       // flicking upward over the bowl tosses the wings
       if (drag.tossY - e.clientY > 55) { drag.hit.onClick(); drag.tossY = e.clientY + 25; }
@@ -225,29 +262,31 @@ function updateParticles(dt) {
     if (p.grow) p.m.scale.addScalar(p.grow*dt);
   }
 }
+// scale a particle count by the effect budget (lighter on mobile), min 1
+const fxN = n => Math.max(1, Math.round(n*FX));
 function burstSteam(pos, n = 3) {
-  for (let i = 0; i < n; i++) spawnParticle({
+  for (let i = 0; i < fxN(n); i++) spawnParticle({
     pos: pos.clone().add(new THREE.Vector3(rand(-.3,.3), 0, rand(-.3,.3))),
     vel: new THREE.Vector3(rand(-.2,.2), rand(.8,1.6), rand(-.2,.2)),
     life: rand(.8,1.6), size: rand(.25,.5), color: 0xfff4e0, opacity: .35, grow: .5,
   });
 }
 function burstSplat(pos, color, n = 10) {
-  for (let i = 0; i < n; i++) spawnParticle({
+  for (let i = 0; i < fxN(n); i++) spawnParticle({
     pos: pos.clone(), color,
     vel: new THREE.Vector3(rand(-1.6,1.6), rand(1,3.2), rand(-1.6,1.6)),
     life: rand(.3,.7), size: rand(.08,.22), gravity: 9, opacity: .95,
   });
 }
 function burstStars(pos, n = 8) {
-  for (let i = 0; i < n; i++) spawnParticle({
+  for (let i = 0; i < fxN(n); i++) spawnParticle({
     pos: pos.clone(), tex: starTex,
     vel: new THREE.Vector3(rand(-2,2), rand(1.5,4), rand(-2,2)),
     life: rand(.6,1.1), size: rand(.25,.5), gravity: 4, opacity: 1,
   });
 }
 function burstConfetti(pos, n = 36) {
-  for (let i = 0; i < n; i++) spawnParticle({
+  for (let i = 0; i < fxN(n); i++) spawnParticle({
     pos: pos.clone().add(new THREE.Vector3(rand(-1,1), rand(0,1), rand(-1,1))),
     color: pick([0xff5d5d, 0xffd34d, 0x7ed957, 0x5dc8ff, 0xd98cff]),
     vel: new THREE.Vector3(rand(-2.5,2.5), rand(2,6), rand(-2.5,2.5)),

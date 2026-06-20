@@ -15,11 +15,14 @@ function cookColor(cook) {
   }
   return COOK_STOPS[COOK_STOPS.length-1].c.clone();
 }
-function makeWingMesh(color = 0xe8a89b) {
+// type: 'drum' | 'flat' | undefined (random). The chosen type is stored on the
+// mesh so a wing keeps its shape all the way from the basket to the plate.
+function makeWingMesh(color = 0xe8a89b, type) {
   const meat = new THREE.MeshStandardMaterial({ color, roughness:.62 });
   const boneMat = new THREE.MeshStandardMaterial({ color:0xf4ecdc, roughness:.45 });
   const g = new THREE.Group();
-  if (Math.random() < .55) {
+  const wtype = type || (Math.random() < .55 ? 'drum' : 'flat');
+  if (wtype === 'drum') {
     // drumette: plump teardrop with the bone poking out the narrow end
     const prof = [[0,0],[.105,.012],[.15,.07],[.168,.15],[.155,.24],[.115,.32],[.07,.38],[.048,.42],[.001,.45]];
     const body = new THREE.Mesh(
@@ -39,31 +42,32 @@ function makeWingMesh(color = 0xe8a89b) {
     knobB.position.set(.33, -.024, .01);
     g.add(shaft, knobA, knobB);
   } else {
-    // wingette (flat): one slim, flattened, tapered segment of meat with two
-    // thin bones poking out the joint end and a small knuckle at the tip end
-    const prof = [[.025,0],[.05,.02],[.08,.08],[.092,.17],[.086,.28],[.068,.39],[.05,.47],[.028,.54],[.001,.575]];
+    // wingette (flat): a meatier flattened segment with two bones poking out the
+    // joint end and a small knuckle at the tip end. Plump, not paper-thin.
+    const prof = [[.03,0],[.07,.02],[.105,.09],[.125,.19],[.118,.30],[.097,.42],[.07,.50],[.04,.56],[.001,.59]];
     const body = new THREE.Mesh(
       new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), 16), meat);
     body.rotation.z = -Math.PI/2;          // length along x, joint end toward -x
-    body.position.x = -.28;
-    body.scale.set(.56, 1, 1.16);          // flatten top-to-bottom, a touch wide
+    body.position.x = -.29;
+    body.scale.set(.76, 1, 1.04);          // flattened, but with real thickness
     body.castShadow = true;
     g.add(body);
-    // a subtle "valley" between the two bones, like a real wingette
-    [-.055, .055].forEach((zz, k) => {
-      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.016, .023, .19, 7), boneMat);
+    // two bones with a subtle valley of meat between them
+    [-.06, .06].forEach((zz, k) => {
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.017, .024, .2, 7), boneMat);
       shaft.rotation.z = Math.PI/2;
-      shaft.position.set(-.19, -.008, zz);
+      shaft.position.set(-.2, -.01, zz);
       shaft.castShadow = true;
-      const knob = new THREE.Mesh(new THREE.SphereGeometry(.03, 8, 6), boneMat);
-      knob.position.set(-.31, -.006, zz - k*.006);  // the two elbow ends offset slightly
+      const knob = new THREE.Mesh(new THREE.SphereGeometry(.032, 8, 6), boneMat);
+      knob.position.set(-.33, -.008, zz - k*.006);  // the two elbow ends offset slightly
       g.add(shaft, knob);
     });
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(.02, 8, 6), boneMat);
-    tip.position.set(.29, 0, 0);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(.022, 8, 6), boneMat);
+    tip.position.set(.3, 0, 0);
     g.add(tip);
   }
   g.userData.mat = meat;
+  g.userData.wtype = wtype;
   return g;
 }
 // apply cook + sauce coat to a wing's material
@@ -223,73 +227,194 @@ const FACES = {};
 ['happy','neutral','grumpy','wow','angry','starry'].forEach(k => { FACES[k].needsUpdate = true; });
 
 const CUSTOMER_NAMES = ['Benny','Greta','Marco','Suki','Dale','Priya','Olive','Chuck','Mabel','Rex',
-  'Twyla','Gus','Nina','Fitz','Cora','Bruno','Hazel','Sven','Lola','Ernie','Wanda','Kip'];
-const SKIN_TONES = [0xf2c79c, 0xe2a878, 0xc4885a, 0x9c6a42, 0x7a4e2e, 0xf2d4b0];
-const SHIRT_COLORS = [0x4a90d9, 0xd94a6a, 0x4ab06a, 0xe8a23a, 0x8a5ad9, 0x3ac4c4, 0xd9d04a, 0xe86a3a];
+  'Twyla','Gus','Nina','Fitz','Cora','Bruno','Hazel','Sven','Lola','Ernie','Wanda','Kip',
+  'Dot','Hank','Roz','Vic','Pearl','Moe','Jin','Esme','Tariq','Bex','Otto','Coral'];
+const SKIN_TONES = [0xf2c79c, 0xe2a878, 0xc4885a, 0x9c6a42, 0x7a4e2e, 0xf2d4b0, 0xd99a6a, 0x8a5a38];
+const SHIRT_COLORS = [0x4a90d9, 0xd94a6a, 0x4ab06a, 0xe8a23a, 0x8a5ad9, 0x3ac4c4, 0xd9d04a, 0xe86a3a,
+  0xe85a8a, 0x6a8ad9, 0x2c9c6a, 0xb0563a];
+const HAIR_COLORS = [0x2c1c10, 0x6a4424, 0xd9c46a, 0xb04a2a, 0x44464a, 0x1a1410, 0x8a8f98, 0xc9744a];
+const PANTS_COLORS = [0x3a3a4a, 0x5a4632, 0x2c4a5a, 0x44403a, 0x4a3a52];
+
+// personality archetypes, with traits that change patience, pace and tips
+const TRAITS = [
+  { id:'regular', label:'Regular',    patience:1.0,  speed:1.0,  tip:1.0,  w:4 },
+  { id:'rushed',  label:'In a Hurry', patience:0.55, speed:1.6,  tip:1.15, w:3, accent:0xff6a3a, restless:true, greet:["Make it quick?","I'm on the clock!","Fast as you can!"] },
+  { id:'chill',   label:'Chill',      patience:1.8,  speed:0.8,  tip:0.85, w:3, accent:0x4ab0d9, greet:["No rush, friend.","Whenever you're ready.","All good, take your time."] },
+  { id:'foodie',  label:'Foodie',     patience:0.95, speed:1.0,  tip:1.5,  w:2, accent:0x9a5ad9, glasses:true, greet:["Make it beautiful.","I know my wings.","Presentation matters."] },
+  { id:'bigtip',  label:'Big Tipper', patience:1.15, speed:1.05, tip:1.9,  w:1, accent:0xffc14d, fancy:true, greet:["Keep the change, chief.","Treat yourself after.","Money's no object."] },
+  { id:'grump',   label:'Grump',      patience:0.72, speed:0.85, tip:0.9,  w:2, accent:0x8a8f98, grumpy:true, greet:["This better be good.","Don't mess it up.","Hmph."] },
+];
+function pickTrait() {
+  const total = TRAITS.reduce((a, t) => a + t.w, 0);
+  let r = rand(total);
+  for (const t of TRAITS) { r -= t.w; if (r <= 0) return t; }
+  return TRAITS[0];
+}
+// body archetypes for silhouette variety
+const BUILDS = [
+  { name:'kid',   p:.12, scale:0.64, bodyR:.36, len:.46, headR:.42, armR:.085 },
+  { name:'round', p:.26, scale:1.0,  bodyR:.57, len:.56, headR:.45, armR:.115 },
+  { name:'tall',  p:.24, scale:1.14, bodyR:.38, len:.74, headR:.39, armR:.092 },
+  { name:'avg',   p:.38, scale:0.98, bodyR:.43, len:.64, headR:.42, armR:.1 },
+];
+function pickBuild() {
+  let r = rand(1);
+  for (const b of BUILDS) { r -= b.p; if (r <= 0) return b; }
+  return BUILDS[BUILDS.length-1];
+}
 
 function makeCustomer() {
   const g = new THREE.Group();
-  const skin = pick(SKIN_TONES), shirt = pick(SHIRT_COLORS);
-  const chunky = rand() < .35, tall = rand(0.92, 1.12);
+  const trait = pickTrait();
+  const B = pickBuild();
+  const skin = pick(SKIN_TONES);
+  // big tippers / accent traits sometimes wear their signature color
+  const shirt = (trait.accent && rand() < .6) ? trait.accent : pick(SHIRT_COLORS);
+  const hairColor = pick(HAIR_COLORS);
   const skinMat = new THREE.MeshStandardMaterial({ color: skin, roughness:.7 });
-  const shirtMat = new THREE.MeshStandardMaterial({ color: shirt, roughness:.75 });
-  const pantsMat = new THREE.MeshStandardMaterial({ color: pick([0x3a3a4a, 0x5a4632, 0x2c4a5a]), roughness:.8 });
+  const shirtMat = new THREE.MeshStandardMaterial({ color: shirt, roughness:.78 });
+  const pantsMat = new THREE.MeshStandardMaterial({ color: pick(PANTS_COLORS), roughness:.82 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness:.95 });
+  const darkMat = new THREE.MeshStandardMaterial({ color:0x1a1814, roughness:.5, metalness:.2 });
 
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(chunky ? .52 : .4, .62, 6, 14), shirtMat);
-  body.position.y = 1.18; body.castShadow = true;
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(B.bodyR, B.len, 6, 14), shirtMat);
+  body.position.y = .92 + B.len/2; body.castShadow = true;
   g.add(body);
-  [-.18, .18].forEach(x => {
-    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(.13, .4, 4, 10), pantsMat);
-    leg.position.set(x, .42, 0); leg.castShadow = true;
+  // little collar so the shirt reads as clothing
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(B.bodyR*.55, .05, 6, 14), shirtMat);
+  collar.rotation.x = Math.PI/2; collar.position.y = .92 + B.len - .02;
+  g.add(collar);
+  const legGap = B.bodyR*.45;
+  [-legGap, legGap].forEach(x => {
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(B.bodyR*.3, .42*B.scale, 4, 10), pantsMat);
+    leg.position.set(x, .42*B.scale, 0); leg.castShadow = true;
     g.add(leg);
+    const shoe = new THREE.Mesh(new THREE.CapsuleGeometry(B.bodyR*.3, .12, 4, 8), darkMat);
+    shoe.rotation.x = Math.PI/2; shoe.position.set(x, .08, .07); shoe.castShadow = true;
+    g.add(shoe);
   });
+  const arms = [];
   [-1, 1].forEach(s => {
-    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(.1, .42, 4, 10), shirtMat);
-    arm.position.set(s*(chunky ? .6 : .5), 1.25, 0);
-    arm.rotation.z = s*.25; arm.castShadow = true;
-    g.add(arm);
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(B.armR, .44, 4, 10), shirtMat);
+    arm.position.set(s*(B.bodyR + B.armR + .02), .96 + B.len/2, 0);
+    arm.rotation.z = s*.22; arm.castShadow = true;
+    g.add(arm); arms.push(arm);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(B.armR*1.05, 8, 6), skinMat);
+    hand.position.set(s*(B.bodyR + B.armR + .12), .72 + B.len/2 - .1, 0);
+    g.add(hand);
   });
-  const head = new THREE.Mesh(new THREE.SphereGeometry(.42, 18, 14), skinMat);
-  head.position.y = 2.12; head.castShadow = true;
+  const headY = .92 + B.len + B.headR + .04;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(B.headR, 18, 14), skinMat);
+  head.position.y = headY; head.castShadow = true;
   g.add(head);
-  const face = new THREE.Mesh(new THREE.PlaneGeometry(.62, .62),
-    new THREE.MeshBasicMaterial({ map: FACES.neutral, transparent: true }));
-  face.position.set(0, 2.14, .39);
+  // ears
+  [-1, 1].forEach(s => {
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(B.headR*.22, 8, 6), skinMat);
+    ear.position.set(s*B.headR*.95, headY, 0); ear.scale.set(.6, 1, .8);
+    g.add(ear);
+  });
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(B.headR*1.5, B.headR*1.5),
+    new THREE.MeshBasicMaterial({ map: trait.grumpy ? FACES.grumpy : FACES.neutral, transparent: true }));
+  face.position.set(0, headY + .02, B.headR*.93);
   g.add(face);
-  // headwear
-  const hw = pick(['cap','cap','beanie','hair','hair','none']);
-  const hatColor = pick(SHIRT_COLORS);
+
+  // ---- hair / headwear ----
+  const hw = trait.fancy ? 'tophat'
+    : pick(['cap','cap','beanie','bun','hairShort','hairShort','hairLong','bald','sunhat']);
+  const hatColor = trait.accent || pick(SHIRT_COLORS);
+  const capMat = new THREE.MeshStandardMaterial({ color: hatColor, roughness:.7 });
   if (hw === 'cap') {
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(.43, 14, 8, 0, Math.PI*2, 0, Math.PI/2.4),
-      new THREE.MeshStandardMaterial({ color: hatColor, roughness:.7 }));
-    cap.position.y = 2.2;
-    const brim = new THREE.Mesh(new THREE.BoxGeometry(.4, .05, .34),
-      new THREE.MeshStandardMaterial({ color: hatColor, roughness:.7 }));
-    brim.position.set(0, 2.34, .45);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(B.headR*1.04, 14, 8, 0, Math.PI*2, 0, Math.PI/2.4), capMat);
+    cap.position.y = headY + B.headR*.2;
+    const brim = new THREE.Mesh(new THREE.BoxGeometry(B.headR*.95, .05, B.headR*.8), capMat);
+    brim.position.set(0, headY + B.headR*.5, B.headR*1.05);
     g.add(cap, brim);
   } else if (hw === 'beanie') {
-    const b = new THREE.Mesh(new THREE.SphereGeometry(.44, 14, 8, 0, Math.PI*2, 0, Math.PI/2.6),
-      new THREE.MeshStandardMaterial({ color: hatColor, roughness:.95 }));
-    b.position.y = 2.18; g.add(b);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(B.headR*1.06, 14, 8, 0, Math.PI*2, 0, Math.PI/2.6), capMat);
+    b.position.y = headY + B.headR*.12; g.add(b);
     const pom = new THREE.Mesh(new THREE.SphereGeometry(.1, 8, 8),
       new THREE.MeshStandardMaterial({ color:0xf2ece0, roughness:.95 }));
-    pom.position.y = 2.62; g.add(pom);
-  } else if (hw === 'hair') {
-    const h = new THREE.Mesh(new THREE.SphereGeometry(.45, 14, 10, 0, Math.PI*2, 0, Math.PI/2.1),
-      new THREE.MeshStandardMaterial({ color: pick([0x2c1c10, 0x6a4424, 0xd9c46a, 0xb04a2a, 0x44464a]), roughness:.95 }));
-    h.position.y = 2.16; h.scale.set(1, 1.06, 1);
-    g.add(h);
+    pom.position.y = headY + B.headR*1.1; g.add(pom);
+  } else if (hw === 'bun') {
+    const h = new THREE.Mesh(new THREE.SphereGeometry(B.headR*1.08, 14, 10, 0, Math.PI*2, 0, Math.PI/1.9), hairMat);
+    h.position.y = headY + B.headR*.06; g.add(h);
+    const bun = new THREE.Mesh(new THREE.SphereGeometry(B.headR*.42, 10, 8), hairMat);
+    bun.position.set(0, headY + B.headR*.95, -B.headR*.5); g.add(bun);
+  } else if (hw === 'hairShort') {
+    const h = new THREE.Mesh(new THREE.SphereGeometry(B.headR*1.06, 14, 10, 0, Math.PI*2, 0, Math.PI/2.0), hairMat);
+    h.position.y = headY + B.headR*.05; h.scale.set(1, 1.05, 1); g.add(h);
+  } else if (hw === 'hairLong') {
+    const h = new THREE.Mesh(new THREE.SphereGeometry(B.headR*1.06, 14, 10, 0, Math.PI*2, 0, Math.PI/1.7), hairMat);
+    h.position.y = headY + B.headR*.04; g.add(h);
+    const back = new THREE.Mesh(new THREE.CapsuleGeometry(B.headR*.6, B.headR*1.1, 5, 9), hairMat);
+    back.position.set(0, headY - B.headR*.5, -B.headR*.75); g.add(back);
+  } else if (hw === 'sunhat') {
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(B.headR*1.7, B.headR*1.7, .04, 18), capMat);
+    brim.position.y = headY + B.headR*.5;
+    const top = new THREE.Mesh(new THREE.SphereGeometry(B.headR*.95, 12, 8, 0, Math.PI*2, 0, Math.PI/2.4), capMat);
+    top.position.y = headY + B.headR*.5; g.add(brim, top);
+  } else if (hw === 'tophat') {
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(B.headR*1.4, B.headR*1.4, .04, 18), darkMat);
+    brim.position.y = headY + B.headR*.55;
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(B.headR*.95, B.headR*.95, B.headR*1.4, 16), darkMat);
+    tube.position.y = headY + B.headR*1.25;
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(B.headR*.97, B.headR*.97, .1, 16),
+      new THREE.MeshStandardMaterial({ color: hatColor, roughness:.6 }));
+    band.position.y = headY + B.headR*.66; g.add(brim, tube, band);
+  } else { // bald, give a faint hair ring
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(B.headR*.78, B.headR*.13, 6, 14), hairMat);
+    ring.rotation.x = Math.PI/2; ring.position.y = headY - B.headR*.15; g.add(ring);
   }
-  g.scale.setScalar(tall);
+
+  // glasses
+  if (trait.glasses || rand() < .22) {
+    const lensMat = new THREE.MeshStandardMaterial({ color:0x222222, roughness:.3, metalness:.4 });
+    [-1, 1].forEach(s => {
+      const lens = new THREE.Mesh(new THREE.TorusGeometry(B.headR*.28, .025, 6, 12), lensMat);
+      lens.position.set(s*B.headR*.42, headY + .02, B.headR*1.0); // in front of the face plane
+      g.add(lens);
+    });
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(B.headR*.3, .03, .03), lensMat);
+    bridge.position.set(0, headY + .02, B.headR*1.0); g.add(bridge);
+  }
+  // beard (skip kids)
+  if (B.name !== 'kid' && rand() < .25) {
+    const beard = new THREE.Mesh(new THREE.SphereGeometry(B.headR*.8, 12, 8, 0, Math.PI*2, Math.PI*.55, Math.PI*.5), hairMat);
+    beard.position.set(0, headY - B.headR*.32, B.headR*.32); beard.scale.set(1, .9, .7);
+    g.add(beard);
+  }
+
+  g.scale.setScalar(B.scale);
   scene.add(g);
 
+  const baseSpeed = rand(2.0, 2.6) * trait.speed;
   const cust = {
-    group: g, face, name: pick(CUSTOMER_NAMES),
-    walkTarget: null, onArrive: null, speed: rand(2.0, 2.6), walkT: 0,
-    patience: 100, order: null, state: 'entering',
+    group: g, face, arms, name: pick(CUSTOMER_NAMES),
+    trait, build: B.name,
+    walkTarget: null, onArrive: null, speed: baseSpeed, walkT: 0, idleT: rand(6.28),
+    patience: 100, patienceRate: 1/trait.patience, tipMul: trait.tip,
+    order: null, state: 'entering', entered: false,
+    _path: null, _pathFirst: null, _pathDone: null,
     setExpression(e) { face.material.map = FACES[e] || FACES.neutral; face.material.needsUpdate = true; },
-    headPos() { return g.localToWorld(new THREE.Vector3(0, 2.75, 0)); },
+    greetLine() { return trait.greet ? '"' + pick(trait.greet) + '"' : null; },
+    // anchor a bit above the crown of the head, so bubbles/buttons clear the face
+    headPos() { return g.localToWorld(new THREE.Vector3(0, headY + B.headR + .35, 0)); },
     moveTo(p, onArrive) { this.walkTarget = p.clone(); this.onArrive = onArrive || null; },
+    // walk a sequence of waypoints; onFirst fires when the first one is reached
+    movePath(points, onArrive, onFirst) {
+      this._path = points.slice();
+      this._pathFirst = onFirst || null;
+      this._pathDone = onArrive || null;
+      this._stepPath();
+    },
+    _stepPath() {
+      const p = this._path.shift();
+      this.moveTo(p, () => {
+        if (this._pathFirst) { this._pathFirst(); this._pathFirst = null; }
+        if (this._path && this._path.length) this._stepPath();
+        else { const cb = this._pathDone; this._pathDone = null; this._path = null; cb && cb(); }
+      });
+    },
     faceToward(p) {
       const d = Math.atan2(p.x - g.position.x, p.z - g.position.z);
       tween(.3, k => { g.rotation.y = lerpAngle(g.rotation.y, d, k); });
@@ -316,7 +441,14 @@ function makeCustomer() {
           g.rotation.y = lerpAngle(g.rotation.y, Math.atan2(d.x, d.z), .15);
           this.walkT += dt*10;
           g.position.y = Math.abs(Math.sin(this.walkT))*.08;
+          g.rotation.z = 0;
         }
+      } else if (this.state === 'waiting' || this.state === 'queued') {
+        // idle personality: a gentle sway, restless folks fidget faster
+        this.idleT += dt;
+        const rate = trait.restless ? 5.5 : 1.3;
+        g.rotation.z = Math.sin(this.idleT*rate)*(trait.restless ? .035 : .018);
+        g.position.y = trait.restless ? Math.abs(Math.sin(this.idleT*rate))*.025 : 0;
       }
     },
     dispose() { removeClickable(g); scene.remove(g); },

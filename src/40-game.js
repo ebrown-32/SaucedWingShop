@@ -15,7 +15,7 @@ const UPGRADES = [
 const G = {
   state:'title', day:1, money:0, streak:0, served:0, customersToday:5,
   queue:[], leaving:[], orders:[], selId:null, spawned:0, spawnT:1.5,
-  bowl:{ count:0, cook:0, sauce:null, coat:0 },
+  bowl: blankBowl(),
   upgrades:{}, dayEarnings:0, dayStarSum:0, serving:false, bestCombo:0,
 };
 const unlockedSauces   = () => SAUCES.filter(s => s.day <= G.day);
@@ -24,7 +24,8 @@ const unlockedDips      = () => DIPS.filter(s => s.day <= G.day);
 const unlockedGarnishes = () => GARNISHES.filter(s => s.day <= G.day && s.id !== 'none');
 const fmt$ = v => '$' + v.toFixed(2);
 const hex = c => '#' + c.toString(16).padStart(6, '0');
-function blankPlate() { return { wings:0, cook:0, sauce:null, coat:0, sides:{}, dip:'none', garnish:'none' }; }
+function blankPlate() { return { wings:0, cook:0, sauce:null, coat:0, sides:{}, dip:'none', garnish:'none', types:[] }; }
+function blankBowl() { return { count:0, cook:0, sauce:null, coat:0, types:[] }; }
 function maxOrders() {
   let n = 3;                  // juggle a few from day one
   if (G.day >= 4) n++;
@@ -109,7 +110,7 @@ function renderTickets() {
     card.className = 'ticketCard' + (o.id === G.selId ? ' sel' : '') + (done ? ' ready' : '');
     card.dataset.id = o.id;
     card.innerHTML = `
-      <div class="tcHead"><b>${o.cust.name}</b>${done ? '<span class="tcReady">READY</span>' : ''}</div>
+      <div class="tcHead"><b>${o.cust.name}</b><span class="tcTag">${o.cust.trait.label}</span>${done ? '<span class="tcReady">READY</span>' : ''}</div>
       <div class="tcPat"><i style="width:${o.cust.patience}%"></i></div>
       <div class="tcRows">${rows.map(r =>
         `<div class="tcRow ${r.ok ? 'ok' : ''}">${r.html}<span class="tcProg">${r.prog}</span></div>`).join('')}</div>`;
@@ -130,25 +131,38 @@ function selectOrder(id) {
 /* ============================================================
    CUSTOMER FLOW
    ============================================================ */
+// the queue hugs the counter (front-right), the wait spots sit front-left, and
+// everyone enters/exits through a clear lane down the right side past the door
+const COUNTER_PT = new THREE.Vector3(0, 0, 2.6);
+const ENTRY_WP = new THREE.Vector3(10.5, 0, 7.5);
 const QUEUE_SLOTS = [
-  new THREE.Vector3(2.2, 0, 4.5),
-  new THREE.Vector3(4.2, 0, 5.8),
-  new THREE.Vector3(6.0, 0, 7.3),
-  new THREE.Vector3(7.6, 0, 9.0),
-  new THREE.Vector3(9.0, 0, 10.8),
+  new THREE.Vector3(0.5, 0, 5.0),
+  new THREE.Vector3(2.6, 0, 5.3),
+  new THREE.Vector3(4.6, 0, 5.7),
+  new THREE.Vector3(6.4, 0, 6.1),
+  new THREE.Vector3(8.0, 0, 6.5),
 ];
 const WAIT_SLOTS = [
-  new THREE.Vector3(-1.6, 0, 4.4),
-  new THREE.Vector3(-3.4, 0, 4.5),
-  new THREE.Vector3(-5.2, 0, 4.7),
-  new THREE.Vector3(-1.8, 0, 6.2),
-  new THREE.Vector3(-3.8, 0, 6.3),
-  new THREE.Vector3(-5.8, 0, 6.4),
+  new THREE.Vector3(-1.8, 0, 5.0),
+  new THREE.Vector3(-3.6, 0, 5.2),
+  new THREE.Vector3(-5.4, 0, 5.5),
+  new THREE.Vector3(-2.4, 0, 6.7),
+  new THREE.Vector3(-4.2, 0, 6.9),
+  new THREE.Vector3(-6.0, 0, 7.1),
 ];
 function spawnCustomer() {
   const c = makeCustomer();
   c.group.position.copy(DOOR_POS);
   c.order = genOrder();
+  // a couple of traits shape the order: foodies want the full works, rushed
+  // folks keep it simple
+  if (c.trait.id === 'foodie' && unlockedGarnishes().length) {
+    if (c.order.garnish === 'none') c.order.garnish = pick(unlockedGarnishes()).id;
+    if (!c.order.side) c.order.side = { id: pick(unlockedSides()).id, count: randi(2, 4) };
+  } else if (c.trait.id === 'rushed') {
+    c.order.wings = Math.min(c.order.wings, 6);
+    c.order.garnish = 'none';
+  }
   c.patience = 100;
   c.orderId = null;
   G.queue.push(c);
@@ -157,19 +171,27 @@ function spawnCustomer() {
     else if (G.queue[0] === c && c.state === 'waiting') takeOrder();
   }, () => curView === 'counter' && (c.orderId != null ||
        (G.queue[0] === c && c.state === 'waiting' && G.orders.length < maxOrders())),
-     () => c.orderId != null ? `${c.name}'s ticket` : `Take ${c.name}'s order`);
+     () => c.orderId != null ? `${c.name} · ${c.trait.label}` : `Take ${c.name}'s order`);
   AudioFX.ding();
-  sendQueueToSlots();
+  restage();
 }
-function sendQueueToSlots() {
+// route everyone in the queue to their slot; newcomers come in via the lane
+function restage() {
   G.queue.forEach((c, i) => {
     const slot = QUEUE_SLOTS[Math.min(i, QUEUE_SLOTS.length-1)];
     c.state = 'walking';
-    c.moveTo(slot, () => {
+    const arrive = () => {
       c.state = i === 0 ? 'waiting' : 'queued';
-      c.faceToward(new THREE.Vector3(0, 0, 0));
-      c.setExpression(i === 0 ? 'neutral' : 'neutral');
-    });
+      c.faceToward(COUNTER_PT);
+      if (i === 0 && !c._greeted) {
+        c._greeted = true;
+        const line = c.greetLine();
+        if (line && curView === 'counter') showBubble(c, line, 2.6);
+      }
+      c.setExpression(c.patience < 40 ? 'grumpy' : c.trait.grumpy ? 'grumpy' : 'neutral');
+    };
+    if (c.entered) c.moveTo(slot, arrive);
+    else c.movePath([ENTRY_WP, slot], arrive, () => { c.entered = true; });
   });
 }
 function takeOrder() {
@@ -183,13 +205,13 @@ function takeOrder() {
   c.setExpression('happy');
   G.orders.push(o);
   const slot = WAIT_SLOTS[(G.orders.length-1) % WAIT_SLOTS.length];
-  c.moveTo(slot, () => c.faceToward(new THREE.Vector3(0, 0, 0)));
+  c.moveTo(slot, () => c.faceToward(COUNTER_PT)); // wait spot is in the clear front zone
   AudioFX.click(); AudioFX.pop();
   showBubble(c, `"${orderText(c.order)}"`, 5);
   G.selId = o.id;
   renderTickets();
   renderPlate(o);
-  sendQueueToSlots();
+  restage();
   showToast("Ticket's up! Hit the fryers.", 'good');
 }
 let bubbleCust = null, bubbleTimer = 0;
@@ -282,7 +304,8 @@ function sendToSauce(b) {
   if (b.count === 0) { showToast('Nothing in that basket to send.', 'bad'); return; }
   if (b.lowered) { showToast('Pull the basket up first!', 'bad'); return; }
   if (G.bowl.count > 0) { showToast("Bowl's still loaded, plate those first.", 'bad'); return; }
-  G.bowl = { count: b.count, cook: b.cook, sauce: null, coat: 0 };
+  // carry each wing's shape (drum/flat) over so it stays the same wing later
+  G.bowl = { count: b.count, cook: b.cook, sauce: null, coat: 0, types: b.wings.map(w => w.userData.wtype) };
   b.wings.forEach(w => b.wingsGroup.remove(w));
   burstSteam(b.group.position, 5);
   b.wings = []; b.count = 0; b.cook = 0;
@@ -297,7 +320,7 @@ function fillBowlWings() {
   bowlWings.forEach(w => SAUCE_ST.wingsGroup.remove(w));
   bowlWings.length = 0;
   for (let i = 0; i < G.bowl.count; i++) {
-    const w = makeWingMesh();
+    const w = makeWingMesh(0xe8a89b, G.bowl.types[i]);
     const a = i/G.bowl.count*Math.PI*2;
     const r = i % 2 ? .42 : .2;
     w.position.set(Math.cos(a)*r, .06 + (i%3)*.07, Math.sin(a)*r);
@@ -384,11 +407,14 @@ function sendToPlate() {
   if (p.wings === 0) { p.cook = G.bowl.cook; p.sauce = G.bowl.sauce; p.coat = G.bowl.coat; }
   else { p.coat = Math.min(p.coat, G.bowl.coat); p.cook = (p.cook + G.bowl.cook)/2; }
   p.wings += move;
+  // move the matching wing shapes over so plated wings look like the fried ones
+  p.types = p.types.concat(G.bowl.types.slice(0, move));
+  G.bowl.types = G.bowl.types.slice(move);
   G.bowl.count -= move;
   if (G.bowl.count <= 0) {
     bowlWings.forEach(w => SAUCE_ST.wingsGroup.remove(w));
     bowlWings.length = 0;
-    G.bowl = { count:0, cook:0, sauce:null, coat:0 };
+    G.bowl = blankBowl();
     SAUCE_ST.liquid.visible = false;
   } else {
     fillBowlWings(); // re-lay the leftover wings
@@ -405,7 +431,7 @@ function trashBowl() {
   if (G.bowl.count === 0) return;
   bowlWings.forEach(w => SAUCE_ST.wingsGroup.remove(w));
   bowlWings.length = 0;
-  G.bowl = { count:0, cook:0, sauce:null, coat:0 };
+  G.bowl = blankBowl();
   SAUCE_ST.liquid.visible = false;
   burstSteam(SAUCE_ST.bowl.position, 4);
   AudioFX.buzz();
@@ -461,7 +487,7 @@ function renderPlate(o) {
   const p = o.plate;
   const sauce = p.sauce ? sauceById(p.sauce) : null;
   for (let i = 0; i < p.wings; i++) {
-    const w = makeWingMesh();
+    const w = makeWingMesh(0xe8a89b, p.types[i]);
     const a = i/Math.max(1, p.wings)*Math.PI*2 - Math.PI/2;
     const r = p.wings > 7 ? (i % 2 ? .66 : .36) : .5;
     w.position.set(Math.cos(a)*r, .16 + (i % 2)*.04, Math.sin(a)*r*.8);
@@ -558,7 +584,8 @@ function evaluateServe(o) {
   const base = (1.4*req.wings + .8*(req.side ? req.side.count : 0)
     + (req.dip !== 'none' ? 1 : 0) + (req.garnish !== 'none' ? .6 : 0)) * (G.upgrades.loyal ? 1.12 : 1);
   const patMult = .5 + .5*(c.patience/100);
-  const tip = base * .5 * total * patMult * (G.upgrades.disco ? 1.15 : 1) * (presScore >= 1 ? 1.25 : 1);
+  // the customer's trait flavors how generously they tip
+  const tip = base * .5 * total * patMult * (c.tipMul || 1) * (G.upgrades.disco ? 1.15 : 1) * (presScore >= 1 ? 1.25 : 1);
   const pay = base*Math.max(.25, total*.85 + .15) + tip;
   G.money += pay; G.dayEarnings += pay; G.dayStarSum += stars;
 
@@ -593,7 +620,8 @@ function evaluateServe(o) {
     G.orders = G.orders.filter(x => x.id !== o.id);
     c.orderId = null;
     c.state = 'leaving';
-    c.moveTo(DOOR_POS, () => { c.dispose(); G.leaving.splice(G.leaving.indexOf(c), 1); });
+    // walk out via the clear lane so they don't cut through the dining tables
+    c.movePath([ENTRY_WP, DOOR_POS], () => { c.dispose(); G.leaving.splice(G.leaving.indexOf(c), 1); });
     G.leaving.push(c);
     // pick another order to show, reset the plate prop home
     G.selId = G.orders.length ? G.orders[0].id : null;
@@ -613,7 +641,7 @@ function evaluateServe(o) {
 function startDay() {
   G.state = 'day';
   G.served = 0; G.spawned = 0; G.dayEarnings = 0; G.dayStarSum = 0; G.streak = 0;
-  G.orders = []; G.selId = null; G.bowl = { count:0, cook:0, sauce:null, coat:0 };
+  G.orders = []; G.selId = null; G.bowl = blankBowl();
   G.customersToday = Math.min(5 + Math.floor(G.day*1.5), 16);
   G.spawnT = 1;
   buildStationUI();
@@ -795,10 +823,15 @@ $('quitBtn').onclick = () => {
   resetToTitle();
 };
 addEventListener('keydown', e => {
-  if (e.code === 'Escape') {
-    if (G.state === 'day') openPause();
-    else if (G.state === 'paused') closePause();
-  }
+  if (e.code !== 'Escape') return;
+  const subOpen = !$('menuShop').classList.contains('hidden') ? 'menuShop'
+    : !$('menuHelp').classList.contains('hidden') ? 'menuHelp' : null;
+  if (subOpen) {                       // back out of shop/how-to first
+    AudioFX.click();
+    $(subOpen).classList.add('hidden');
+    $(menuReturn).classList.remove('hidden');
+  } else if (G.state === 'day') openPause();
+  else if (G.state === 'paused') closePause();
 });
 
 /* title screen */
@@ -847,15 +880,15 @@ renderer.setAnimationLoop((t) => {
       }
     }
     const decay = G.upgrades.charm ? .65 : 1;
-    // queue patience
+    // queue patience (impatient traits tick down faster via patienceRate)
     G.queue.forEach((c) => {
       if (c.state === 'waiting' || c.state === 'queued')
-        c.patience = Math.max(6, c.patience - dt*1.0*decay);
+        c.patience = Math.max(6, c.patience - dt*1.0*decay*c.patienceRate);
       if (c.patience < 40 && c.state !== 'walking') c.setExpression('grumpy');
     });
     // waiting-for-food patience (each active order)
     if (!G.serving) G.orders.forEach(o => {
-      o.cust.patience = Math.max(6, o.cust.patience - dt*.7*decay);
+      o.cust.patience = Math.max(6, o.cust.patience - dt*.7*decay*o.cust.patienceRate);
       if (o.cust.patience < 35) o.cust.setExpression('grumpy');
     });
     // refresh ticket-rail patience bars a few times a second
@@ -875,14 +908,14 @@ renderer.setAnimationLoop((t) => {
     if (showBtn) {
       const s = worldToScreen(first.headPos());
       $('takeOrderBtn').style.left = s.x + 'px';
-      $('takeOrderBtn').style.top = (s.y - 96) + 'px';
+      $('takeOrderBtn').style.top = (s.y - 118) + 'px';
     }
     document.querySelector('[data-view=counter]').classList.toggle('alert', !!(canTake && curView !== 'counter'));
     // speech bubble follows its customer
     if ($('bubble').classList.contains('show') && bubbleCust) {
       const s = worldToScreen(bubbleCust.headPos());
       $('bubble').style.left = s.x + 'px';
-      $('bubble').style.top = (s.y - 16) + 'px';
+      $('bubble').style.top = (s.y - 24) + 'px';
       bubbleTimer -= dt;
       if (bubbleTimer <= 0) $('bubble').classList.remove('show');
     }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>SAUCED! | Wing Shop Simulator</title>
+<title>SAUCED! The 3D Wing Shop</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -30,7 +30,7 @@
 
   /* ---------- HUD top bar ---------- */
   #topbar {
-    position:fixed; top:14px; left:50%; transform:translateX(-50%);
+    position:fixed; top:max(14px, env(safe-area-inset-top)); left:50%; transform:translateX(-50%);
     display:flex; gap:8px; align-items:stretch; z-index:20; pointer-events:none;
   }
   .pill {
@@ -45,17 +45,17 @@
   #moneyLabel { color:var(--good); font-size:15px; }
   #streakPill { display:none; border-color:var(--gold); color:var(--gold); }
   #streakPill.on { display:flex; animation:bump .3s ease; }
-  #muteBtn { pointer-events:auto; cursor:pointer; color:var(--cream-dim); }
-  #muteBtn:hover { color:var(--cream); border-color:var(--cream-dim); }
+  #muteBtn, #menuOpenBtn { pointer-events:auto; cursor:pointer; color:var(--cream-dim); }
+  #muteBtn:hover, #menuOpenBtn:hover { color:var(--cream); border-color:var(--cream-dim); }
   #muteBtn.muted svg { opacity:.35; }
   #muteBtn.muted { text-decoration:line-through; }
   @keyframes bump { 0%{transform:scale(1.25)} 100%{transform:scale(1)} }
 
   /* ---------- ticket rail (one card per active order) ---------- */
   #ticketRail {
-    position:fixed; left:14px; top:74px; z-index:21; width:218px;
+    position:fixed; left:max(14px, env(safe-area-inset-left)); top:74px; z-index:21; width:218px;
     display:none; flex-direction:column; gap:8px;
-    max-height:calc(100vh - 230px); overflow-y:auto; padding-right:2px;
+    max-height:calc(100dvh - 230px); overflow-y:auto; padding-right:2px;
   }
   #ticketRail.show { display:flex; }
   #ticketRail::-webkit-scrollbar { width:5px; }
@@ -74,9 +74,10 @@
   .ticketCard:hover { transform:translateX(3px); }
   .ticketCard.sel { border-color:var(--hot); box-shadow:0 8px 24px rgba(255,92,46,.4); }
   .ticketCard.ready { border-color:#3a8a2e; }
-  .tcHead { display:flex; align-items:center; justify-content:space-between; font-family:var(--display); font-size:13px; color:#9c3a16; letter-spacing:.04em; }
+  .tcHead { display:flex; align-items:center; gap:6px; font-family:var(--display); font-size:13px; color:#9c3a16; letter-spacing:.04em; }
   .tcHead b { font-weight:400; }
-  .tcReady { font-size:9px; color:#fff; background:#3a8a2e; border-radius:4px; padding:2px 5px; letter-spacing:.08em; }
+  .tcTag { font-family:var(--body); font-size:8.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:#b0763a; background:rgba(176,118,58,.14); padding:2px 5px; border-radius:4px; }
+  .tcReady { margin-left:auto; font-size:9px; color:#fff; background:#3a8a2e; border-radius:4px; padding:2px 5px; letter-spacing:.08em; }
   .tcPat { height:5px; background:#d4c8b0; border-radius:99px; overflow:hidden; margin:5px 0 6px; }
   .tcPat i { display:block; height:100%; background:linear-gradient(90deg,#e0492a,#ffc14d,#74c46a); transition:width .3s; }
   .tcRows { display:flex; flex-direction:column; gap:2px; }
@@ -88,10 +89,10 @@
 
   /* ---------- station nav ---------- */
   #stationNav {
-    position:fixed; bottom:16px; left:50%; transform:translateX(-50%);
+    position:fixed; bottom:max(16px, env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%);
     display:flex; gap:6px; z-index:25; background:var(--panel);
     border:1px solid var(--line); border-radius:14px; padding:6px;
-    backdrop-filter:blur(10px);
+    backdrop-filter:blur(10px); max-width:96vw;
   }
   #stationNav button {
     font-family:var(--body); font-weight:700; font-size:12.5px; letter-spacing:.1em;
@@ -292,7 +293,7 @@
   #vig { position:fixed; inset:0; pointer-events:none; z-index:5; box-shadow:inset 0 0 200px rgba(5,3,1,.6); }
 
   /* ===================================================================
-     RESPONSIVE — tablets, phones, and short/landscape screens.
+     RESPONSIVE, tablets, phones, and short/landscape screens.
      The 3D canvas already fills any viewport; here we reflow the overlay
      UI so the HUD, ticket rail and station controls stay usable & pretty.
      =================================================================== */
@@ -301,17 +302,18 @@
     .meter { width:175px; }
   }
   @media (max-width: 760px) {
-    #topbar { gap:5px; top:8px; flex-wrap:wrap; justify-content:center; max-width:96vw; }
+    #topbar { gap:5px; top:max(8px, env(safe-area-inset-top)); flex-wrap:wrap; justify-content:center; }
     .pill { padding:6px 10px; font-size:12px; }
     .pill .lab { font-size:8px; }
-    #stationNav { gap:3px; padding:5px; bottom:10px; }
-    #stationNav button { padding:8px 11px; font-size:11px; gap:5px; }
-    #controls { bottom:74px; gap:7px; }
+    #stationNav { gap:3px; padding:5px; }
+    #stationNav button { padding:9px 11px; font-size:11px; gap:5px; }
+    /* lift the controls clear of the nav bar + home indicator */
+    #controls { bottom:max(78px, calc(env(safe-area-inset-bottom) + 76px)); gap:7px; }
     .panel { padding:10px 11px; }
     .panel h4 { font-size:9.5px; }
     .meter { width:158px; }
     #coatWrap { width:180px; }
-    #ticketRail { left:8px; top:62px; width:158px; max-height:calc(100dvh - 210px); }
+    #ticketRail { top:max(62px, calc(env(safe-area-inset-top) + 52px)); width:158px; max-height:calc(100dvh - 230px); }
     .ticketCard { padding:8px 9px; }
     .tcRow { font-size:11px; }
     .bigbtn { font-size:14px; padding:11px 18px; }
@@ -319,27 +321,36 @@
     .modal h1 { font-size:42px; }
     .modal h2 { font-size:20px; }
     .upGrid { grid-template-columns:1fr; }
-    #bigBanner { font-size:38px; }
+    #bigBanner { font-size:34px; }
     #stationName { font-size:15px; }
+    .menuRow { gap:7px; }
   }
   @media (max-width: 540px) {
     /* scale the whole bottom control cluster down so it always fits */
-    #controls { transform:translateX(-50%) scale(.8); transform-origin:bottom center; }
-    #fryControls, #sauceControls, #buildControls { flex-wrap:wrap; justify-content:center; max-width:96vw; }
-    #ticketRail { width:132px; top:96px; }
+    #controls { transform:translateX(-50%) scale(.82); transform-origin:bottom center; }
+    #fryControls, #sauceControls, #buildControls { flex-wrap:wrap; justify-content:center; max-width:97vw; }
+    #ticketRail { width:138px; }
     .tcHead { font-size:11px; }
+    .tcTag { display:none; }
     #takeOrderBtn { font-size:13px; padding:9px 14px; }
   }
   @media (max-height: 560px) {
-    #ticketRail { top:54px; max-height:calc(100dvh - 150px); }
-    #controls { bottom:60px; }
-    #stationNav { bottom:8px; }
+    #ticketRail { top:max(54px, env(safe-area-inset-top)); max-height:calc(100dvh - 130px); }
+    #controls { bottom:max(60px, calc(env(safe-area-inset-bottom) + 58px)); }
     #hint { display:none; }
   }
   @media (max-width: 940px) and (max-height: 480px) {
     #controls { transform:translateX(-50%) scale(.72); transform-origin:bottom center; }
-    #topbar { top:5px; }
-    #ticketRail { top:46px; }
+    #topbar { top:max(5px, env(safe-area-inset-top)); }
+    #ticketRail { top:max(46px, env(safe-area-inset-top)); }
+  }
+  /* touch devices: fatten tap targets and drop hover-only chrome */
+  @media (pointer: coarse) {
+    #hoverLabel { display:none !important; }
+    #stationNav button { padding:11px 14px; }
+    .sbtn { padding:11px 14px; font-size:12.5px; }
+    .menuBtn { padding:13px 18px; }
+    .ticketCard { padding:11px 12px; }
   }
   /* fine pointers (desktop/trackpad) get a grab cursor on the world */
   @media (hover: hover) and (pointer: fine) { #c { cursor:grab; } }
@@ -359,7 +370,7 @@
   <g id="i-arrow"><path d="M5 12h13m-5-5 5 5-5 5"/></g>
   <g id="i-bag"><path d="M6 8h12l-1 12H7L6 8z"/><path d="M9 8a3 3 0 0 1 6 0"/></g>
   <g id="i-book"><path d="M5 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H5V5z"/><path d="M19 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6V5z"/></g>
-  <g id="i-star"><path d="M12 4l2.3 5 5.2.5-4 3.5 1.2 5.2L12 20.5 7.3 18.2 8.5 13l-4-3.5 5.2-.5L12 4z"/></g>
+  <g id="i-menu"><path d="M5 7h14M5 12h14M5 17h14"/></g>
 </defs></svg>
 
 <div id="topbar">
@@ -369,6 +380,7 @@
   <div class="pill"><span id="moneyLabel">$0.00</span></div>
   <div class="pill" id="streakPill"><span class="lab">STREAK</span><span id="streakLabel">0</span></div>
   <div class="pill" id="muteBtn" title="Toggle sound"><svg class="ico"><use href="#i-sound"/></svg></div>
+  <div class="pill" id="menuOpenBtn" title="Menu &amp; shop"><svg class="ico"><use href="#i-menu"/></svg></div>
 </div>
 
 <div id="ticketRail"></div>
@@ -431,25 +443,41 @@
     </svg>
     <h1>SAUCED!</h1>
     <p class="tag">THE 3D WING SHOP</p>
-    <p>Fry 'em golden. Toss 'em saucy. Plate 'em pretty.<br>Keep the customers grinning and the tips flowing.</p>
+    <p>Fry 'em golden. Toss 'em saucy. Plate 'em pretty.<br>Keep the regulars grinning and the tips rolling in.</p>
     <div class="menuBtns">
       <button class="bigbtn" id="startBtn">OPEN THE SHOP</button>
       <div class="menuRow">
         <button class="menuBtn" id="menuShopBtn"><svg class="ico"><use href="#i-bag"/></svg>SHOP</button>
         <button class="menuBtn" id="menuHelpBtn"><svg class="ico"><use href="#i-book"/></svg>HOW TO PLAY</button>
-        <button class="menuBtn" id="menuCreditsBtn"><svg class="ico"><use href="#i-star"/></svg>CREDITS</button>
       </div>
     </div>
-    <button class="subbtn hidden" id="newGameBtn">start a fresh new game instead</button>
+    <button class="subbtn hidden" id="newGameBtn">scrap it and start a fresh shop</button>
+  </div>
+</div>
+
+<!-- PAUSE / IN-GAME MENU -->
+<div id="pauseMenu" class="modalBg hidden">
+  <div class="modal">
+    <h2>SHOP'S ON HOLD</h2>
+    <p class="tag">TAKE A BREATHER</p>
+    <p>The fryers are waiting. Pop into the shop, brush up on the how-to,<br>or dive back behind the counter.</p>
+    <div class="menuBtns">
+      <button class="bigbtn" id="resumeBtn">BACK TO WORK</button>
+      <div class="menuRow">
+        <button class="menuBtn" id="pauseShopBtn"><svg class="ico"><use href="#i-bag"/></svg>SHOP</button>
+        <button class="menuBtn" id="pauseHelpBtn"><svg class="ico"><use href="#i-book"/></svg>HOW TO PLAY</button>
+        <button class="menuBtn" id="quitBtn">QUIT TO TITLE</button>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- SHOP / INVENTORY -->
 <div id="menuShop" class="modalBg hidden">
   <div class="modal">
-    <h2>UPGRADE SHOP</h2>
-    <p class="tag">SPEND YOUR EARNINGS</p>
-    <div class="shopWallet">Wallet: <b id="shopMoney">$0.00</b></div>
+    <h2>THE UPGRADE COUNTER</h2>
+    <p class="tag">SPEND WHAT YOU'VE EARNED</p>
+    <div class="shopWallet">In the register: <b id="shopMoney">$0.00</b></div>
     <div class="upGrid" id="shopGrid"></div>
     <button class="bigbtn menuBack" data-menu="menuShop">BACK</button>
   </div>
@@ -458,35 +486,17 @@
 <!-- HOW TO PLAY -->
 <div id="menuHelp" class="modalBg hidden">
   <div class="modal" style="text-align:left;">
-    <h2 style="text-align:center;">HOW TO PLAY</h2>
+    <h2 style="text-align:center;">HOW IT WORKS</h2>
     <p class="tag" style="text-align:center;">RUN THE WING SHOP</p>
     <div class="helpList">
-      <div class="helpStep"><span class="hsNum">1</span><div><b>Take orders</b> — Customers line up at the counter. Click one to take their ticket. Juggle several orders at once; the tickets stack on the left.</div></div>
-      <div class="helpStep"><span class="hsNum">2</span><div><b>Fry in bulk</b> — At the Fry station load wings into a basket, click to drop it into the oil, then pull it up in the <b style="color:var(--good)">green</b> zone. Cook a big batch to fill several tickets at once.</div></div>
-      <div class="helpStep"><span class="hsNum">3</span><div><b>Sauce</b> — Send a basket to the bowl, click a pot to pour, then toss (click the bowl, press Space, or flick up) until fully coated.</div></div>
-      <div class="helpStep"><span class="hsNum">4</span><div><b>Plate smart</b> — Pick a ticket, then "Send to plate" — only the wings that ticket needs transfer, leaving the rest in the bowl for the next plate. Add sides, a dip, and a garnish to match.</div></div>
-      <div class="helpStep"><span class="hsNum">5</span><div><b>Serve</b> — Hit SERVE to deliver. Accuracy and speed earn stars, tips, and perfect-streak bonuses. Spend earnings on upgrades between days.</div></div>
+      <div class="helpStep"><span class="hsNum">1</span><div><b>Take the orders.</b> Hungry folks line up at the counter. Tap one to grab their ticket. Run a few at once; the tickets stack on the left.</div></div>
+      <div class="helpStep"><span class="hsNum">2</span><div><b>Fry a batch.</b> Load a basket, drop it in the oil, and yank it up while the meter sits in the <b style="color:var(--good)">green</b>. Cook big to feed several tickets at once.</div></div>
+      <div class="helpStep"><span class="hsNum">3</span><div><b>Drench 'em.</b> Send a basket to the bowl, tap a pot to pour, then toss (tap the bowl, hit Space, or flick up) until they're fully coated.</div></div>
+      <div class="helpStep"><span class="hsNum">4</span><div><b>Plate it right.</b> Pick a ticket and "Send to plate." Only the wings that ticket needs come over, so the rest of the batch waits in the bowl. Add the sides, dip, and garnish they asked for.</div></div>
+      <div class="helpStep"><span class="hsNum">5</span><div><b>Send it out.</b> Hit SERVE. Nail it fast and clean for five stars, fat tips, and streak bonuses. Sink the cash into upgrades.</div></div>
     </div>
-    <p style="text-align:center; font-size:12px;">Keys: <b>1–4</b> stations · <b>Tab</b> switch ticket · <b>Space</b> toss · drag the world to look around</p>
-    <button class="bigbtn menuBack" data-menu="menuHelp">GOT IT</button>
-  </div>
-</div>
-
-<!-- CREDITS -->
-<div id="menuCredits" class="modalBg hidden">
-  <div class="modal">
-    <h2>CREDITS</h2>
-    <p class="tag">SAUCED! — THE 3D WING SHOP</p>
-    <div class="creditList">
-      <div class="creditRow"><span>Game Design &amp; Code</span><b>Built with Claude</b></div>
-      <div class="creditRow"><span>3D Engine</span><b>three.js</b></div>
-      <div class="creditRow"><span>Art, Models &amp; FX</span><b>100% procedural</b></div>
-      <div class="creditRow"><span>Music &amp; Sound</span><b>Synthesized live</b></div>
-      <div class="creditRow"><span>Typography</span><b>Bungee · Space Grotesk</b></div>
-      <div class="creditRow"><span>Inspired by</span><b>Papa's Wingeria</b></div>
-    </div>
-    <p style="font-size:12px;">Thanks for playing — now go get SAUCED! 🍗</p>
-    <button class="bigbtn menuBack" data-menu="menuCredits">BACK</button>
+    <p style="text-align:center; font-size:12px;">Keys: <b>1</b> to <b>4</b> stations · <b>Tab</b> switch ticket · <b>Space</b> toss · drag the world to look around</p>
+    <button class="bigbtn menuBack" data-menu="menuHelp">LET'S COOK</button>
   </div>
 </div>
 
@@ -521,7 +531,7 @@
 import * as THREE from 'three';
 
 /* ============================================================
-   CORE — renderer, camera, tweens, input, audio, particles
+   CORE, renderer, camera, tweens, input, audio, particles
    ============================================================ */
 const $ = id => document.getElementById(id);
 const rand = (a=1, b) => b === undefined ? Math.random()*a : a + Math.random()*(b-a);
@@ -530,10 +540,16 @@ const pick = arr => arr[Math.floor(Math.random()*arr.length)];
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b-a)*t;
 
-const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: true, preserveDrawingBuffer: true });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+// coarse pointer or a small viewport means phone/tablet: scale the renderer
+// down and lighten effects so the game stays smooth on mobile GPUs
+const IS_TOUCH = matchMedia('(pointer:coarse)').matches;
+const IS_MOBILE = IS_TOUCH || Math.min(innerWidth, innerHeight) < 560;
+const FX = IS_MOBILE ? 0.5 : 1;   // global particle/effect budget scale
+
+const renderer = new THREE.WebGLRenderer({ canvas: $('c'), antialias: !IS_MOBILE, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, IS_MOBILE ? 1.6 : 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = IS_MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.3;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -546,12 +562,22 @@ const camera = new THREE.PerspectiveCamera(46, innerWidth/innerHeight, 0.1, 100)
 camera.position.set(0, 7, 18);
 const camTarget = new THREE.Vector3(0, 2, 0);
 
+// keep a roughly constant *horizontal* field of view so wide stations stay in
+// frame on tall portrait phones (vertical fov widens as the screen narrows)
 function resize() {
-  camera.aspect = innerWidth/innerHeight;
+  const aspect = innerWidth/innerHeight;
+  camera.aspect = aspect;
+  let vfov = 46 * Math.PI/180;
+  const minHFov = 60 * Math.PI/180;
+  const hfov = 2*Math.atan(Math.tan(vfov/2)*aspect);
+  if (hfov < minHFov) vfov = 2*Math.atan(Math.tan(minHFov/2)/aspect);
+  camera.fov = clamp(vfov*180/Math.PI, 40, 80);
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 }
-addEventListener('resize', resize); resize();
+addEventListener('resize', resize);
+addEventListener('orientationchange', () => setTimeout(resize, 200));
+resize();
 
 /* ---------- tween system ---------- */
 const tweens = [];
@@ -590,7 +616,7 @@ function popIn(obj, scale=1, dur=.5) {
   tween(dur, k => obj.scale.setScalar(scale*k), { ease: Ease.outBack });
 }
 
-/* ---------- camera views (owner POV — facing the dining room) ---------- */
+/* ---------- camera views (owner POV, facing the dining room) ---------- */
 const VIEWS = {
   title:   { pos: new THREE.Vector3(12, 7.5, 14),  tgt: new THREE.Vector3(0, 2.4, 0) },
   counter: { pos: new THREE.Vector3(0, 3.8, -1.5), tgt: new THREE.Vector3(0, 1.85, 6) },
@@ -598,6 +624,14 @@ const VIEWS = {
   sauce:   { pos: new THREE.Vector3(0, 4.5, -3.6), tgt: new THREE.Vector3(0, 1.4, 0) },
   build:   { pos: new THREE.Vector3(6.4, 4.5, -3.6), tgt: new THREE.Vector3(6.35, 1.4, 0) },
 };
+// on mobile the wider fov zooms out, so dolly the work-station cameras in a bit
+// to enlarge the tap targets, and lift the aim on sauce/build so the pots and
+// bins (which sit behind the bowl/plate) stay comfortably in frame
+if (IS_MOBILE) {
+  VIEWS.sauce.tgt.y += .28; VIEWS.build.tgt.y += .28;
+  const dolly = { counter: .05, fry: .18, sauce: .14, build: .16 };
+  for (const k in dolly) VIEWS[k].pos.lerp(VIEWS[k].tgt, dolly[k]);
+}
 let curView = 'title';
 // free-look: drag the canvas to glance around the shop from where you stand
 const look = { yaw: 0, pitch: 0, yawT: 0, pitchT: 0 };
@@ -643,7 +677,7 @@ function removeClickable(mesh) {
   const i = clickables.findIndex(c => c.mesh === mesh);
   if (i >= 0) clickables.splice(i, 1);
 }
-function pickClickable(clientX, clientY) {
+function rayHitAt(clientX, clientY) {
   pointer.set((clientX/innerWidth)*2-1, -(clientY/innerHeight)*2+1);
   raycaster.setFromCamera(pointer, camera);
   for (const c of clickables) {
@@ -652,17 +686,30 @@ function pickClickable(clientX, clientY) {
   }
   return null;
 }
+// pick a clickable at the tap point, with a forgiving radius so small 3D
+// targets (sauce pots, bins) are easy to hit with a fingertip
+function pickClickable(clientX, clientY, fat = false) {
+  const direct = rayHitAt(clientX, clientY);
+  if (direct || !fat) return direct;
+  const r = IS_TOUCH ? 26 : 12;
+  for (let a = 0; a < Math.PI*2; a += Math.PI/4) {
+    const hit = rayHitAt(clientX + Math.cos(a)*r, clientY + Math.sin(a)*r);
+    if (hit) return hit;
+  }
+  return null;
+}
+const TAP_SLOP = IS_TOUCH ? 12 : 6;   // fingers wobble more than a mouse
 const drag = { down: false, x: 0, y: 0, moved: false, hit: null, tossY: 0 };
 addEventListener('pointerdown', e => {
   if (e.target !== $('c')) return;
   drag.down = true; drag.moved = false;
   drag.x = e.clientX; drag.y = e.clientY; drag.tossY = e.clientY;
-  drag.hit = pickClickable(e.clientX, e.clientY);
+  drag.hit = pickClickable(e.clientX, e.clientY, true);
 });
 addEventListener('pointermove', e => {
   if (drag.down) {
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
-    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6) return;
+    if (!drag.moved && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < TAP_SLOP) return;
     if (drag.hit && drag.hit.dragToss) {
       // flicking upward over the bowl tosses the wings
       if (drag.tossY - e.clientY > 55) { drag.hit.onClick(); drag.tossY = e.clientY + 25; }
@@ -745,29 +792,31 @@ function updateParticles(dt) {
     if (p.grow) p.m.scale.addScalar(p.grow*dt);
   }
 }
+// scale a particle count by the effect budget (lighter on mobile), min 1
+const fxN = n => Math.max(1, Math.round(n*FX));
 function burstSteam(pos, n = 3) {
-  for (let i = 0; i < n; i++) spawnParticle({
+  for (let i = 0; i < fxN(n); i++) spawnParticle({
     pos: pos.clone().add(new THREE.Vector3(rand(-.3,.3), 0, rand(-.3,.3))),
     vel: new THREE.Vector3(rand(-.2,.2), rand(.8,1.6), rand(-.2,.2)),
     life: rand(.8,1.6), size: rand(.25,.5), color: 0xfff4e0, opacity: .35, grow: .5,
   });
 }
 function burstSplat(pos, color, n = 10) {
-  for (let i = 0; i < n; i++) spawnParticle({
+  for (let i = 0; i < fxN(n); i++) spawnParticle({
     pos: pos.clone(), color,
     vel: new THREE.Vector3(rand(-1.6,1.6), rand(1,3.2), rand(-1.6,1.6)),
     life: rand(.3,.7), size: rand(.08,.22), gravity: 9, opacity: .95,
   });
 }
 function burstStars(pos, n = 8) {
-  for (let i = 0; i < n; i++) spawnParticle({
+  for (let i = 0; i < fxN(n); i++) spawnParticle({
     pos: pos.clone(), tex: starTex,
     vel: new THREE.Vector3(rand(-2,2), rand(1.5,4), rand(-2,2)),
     life: rand(.6,1.1), size: rand(.25,.5), gravity: 4, opacity: 1,
   });
 }
 function burstConfetti(pos, n = 36) {
-  for (let i = 0; i < n; i++) spawnParticle({
+  for (let i = 0; i < fxN(n); i++) spawnParticle({
     pos: pos.clone().add(new THREE.Vector3(rand(-1,1), rand(0,1), rand(-1,1))),
     color: pick([0xff5d5d, 0xffd34d, 0x7ed957, 0x5dc8ff, 0xd98cff]),
     vel: new THREE.Vector3(rand(-2.5,2.5), rand(2,6), rand(-2.5,2.5)),
@@ -958,7 +1007,7 @@ const DIPS = [
   { id:'sriracha',name:'Sriracha Mayo',  color:0xe8763a, day:7 },
   { id:'aioli',   name:'Garlic Aioli',   color:0xeae2c0, day:9 },
 ];
-// garnishes — the finishing touch that makes plating a craft
+// garnishes, the finishing touch that makes plating a craft
 const GARNISHES = [
   { id:'none',    name:'No garnish', color:0x888888, day:1 },
   { id:'lemon',   name:'Lemon Wedge', color:0xf2e24a, day:2 },
@@ -971,7 +1020,7 @@ const dipById     = id => DIPS.find(s => s.id === id);
 const garnishById = id => GARNISHES.find(s => s.id === id);
 
 /* ============================================================
-   ENVIRONMENT — the wing shop, seen from behind the counter.
+   ENVIRONMENT, the wing shop, seen from behind the counter.
    The owner works at a long prep counter (z ≈ -0.3) and looks
    out over the serving counter (z = 2.6) into the dining room.
    ============================================================ */
@@ -1073,7 +1122,7 @@ scene.add(floor);
 const wallMat = new THREE.MeshStandardMaterial({ color:0x4a505c, roughness:.9 });
 const wallMat2 = new THREE.MeshStandardMaterial({ color:0x8a2f22, roughness:.9 });
 // a solid wall panel (built in its own XY plane, extruded through `thickness`)
-// with real rectangular openings cut out — these become the window reveals.
+// with real rectangular openings cut out, these become the window reveals.
 function makeWallWithHoles(w, h, thickness, holes) {
   const shape = new THREE.Shape();
   shape.moveTo(-w/2, -h/2); shape.lineTo(w/2, -h/2);
@@ -1099,7 +1148,7 @@ const frontWall = makeWallWithHoles(30, 8, .4,
   [-11.5, -5, 5].map(x => ({ x, y: -0.4, w: 3.72, h: 2.72 })));
 frontWall.position.set(0, 4, 17.2);
 scene.add(frontWall);
-// side walls — local x maps to world z (z = 6 and 11), so x = ±(z-4)
+// side walls, local x maps to world z (z = 6 and 11), so x = ±(z-4)
 const leftWall = makeWallWithHoles(26, 8, .4, [6, 11].map(z => ({ x: z-4, y: -0.4, w: 3.32, h: 2.52 })));
 leftWall.position.set(-14.5, 4, 4); leftWall.rotation.y = -Math.PI/2;
 scene.add(leftWall);
@@ -1175,7 +1224,7 @@ function drawCity() {
       g.globalAlpha = 1; g.shadowBlur = 0;
     }
   });
-  // atmospheric haze settling over the rooftops — pushes the city back
+  // atmospheric haze settling over the rooftops, pushes the city back
   const haze = g.createLinearGradient(0, hz - 70, 0, hz);
   haze.addColorStop(0, 'rgba(74,52,58,0)'); haze.addColorStop(1, 'rgba(120,78,70,.35)');
   g.fillStyle = haze; g.fillRect(0, hz - 70, W, 70);
@@ -1228,7 +1277,10 @@ function updateCity(dt) {
         if (d) b.lit[i] = Math.abs(d) < .04 ? b.litT[i] : b.lit[i] + Math.sign(d)*Math.min(Math.abs(d), step/1.5);
       }
   }
-  drawCity(); // redraw every frame so traffic glides instead of stuttering
+  // redraw the canvas every frame on desktop (smooth traffic); throttle to
+  // ~22fps on mobile to spare the GPU the texture re-upload each frame
+  cityState.drawAcc = (cityState.drawAcc || 0) + dt;
+  if (!IS_MOBILE || cityState.drawAcc >= .045) { cityState.drawAcc = 0; drawCity(); }
 }
 drawCity();
 const winMat = new THREE.MeshStandardMaterial({ map: cityTex, emissive:0xffffff, emissiveMap: cityTex, emissiveIntensity:.55 });
@@ -1286,9 +1338,9 @@ function addWindow(x, y, z, w, h, rotY) {
   grp.add(box(fb, h + fb*2, .2, frameMat, w/2 + fb/2, 0, fz));   // right
   scene.add(grp);
 }
-// front-wall windows — room face is z = 17.0
+// front-wall windows, room face is z = 17.0
 [-11.5, -5, 5].forEach(x => addWindow(x, 3.6, 17.0, 3.6, 2.6, Math.PI));
-// side-wall windows — room faces are x = ∓14.3
+// side-wall windows, room faces are x = ∓14.3
 [6, 11].forEach(z => addWindow(-14.3, 3.6, z, 3.2, 2.4, Math.PI/2));
 [6, 11].forEach(z => addWindow(14.3, 3.6, z, 3.2, 2.4, -Math.PI/2));
 
@@ -1333,7 +1385,7 @@ function drawMenu() {
   menuTex.needsUpdate = true;
 }
 drawMenu();
-// canvas text draws before webfonts arrive — redraw once they do
+// canvas text draws before webfonts arrive, redraw once they do
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { drawNeon(); drawMenu(); });
 const menuMat = new THREE.MeshStandardMaterial({ map: menuTex, roughness:.9 });
 [-8.3, 8.3].forEach(x => {
@@ -1364,8 +1416,11 @@ scene.add(box(11, .45, .1, M.red, 0, 1.0, 3.42)); // accent stripe
   scene.add(cyl(.06, .09, 1, M.steelDark, x, .5, 4.3));
 });
 
-/* ---- dining tables ---- */
-[[-7, 8.5], [7, 8.5], [-9.5, 12.5], [12, 11], [0, 12.5]].forEach(([x, z]) => {
+/* ---- dining tables ----
+   kept in the back dining area (z >= 9.5, x <= 7) so they never sit in the
+   customer flow: the queue/wait zone hugs the counter (z < 7.5) and the
+   entrance lane runs down the right side (x > 9.5). */
+[[-7.5, 9.8], [7, 10.5], [-8, 13.5], [0, 13], [5.5, 14]].forEach(([x, z]) => {
   scene.add(cyl(1.15, 1.15, .1, M.red, x, 1.5, z));
   scene.add(cyl(.09, .14, 1.5, M.steelDark, x, .75, z));
   [[1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6]].forEach(([dx, dz]) => {
@@ -1373,7 +1428,7 @@ scene.add(box(11, .45, .1, M.red, 0, 1.0, 3.42)); // accent stripe
     scene.add(cyl(.05, .07, .8, M.steelDark, x+dx, .4, z+dz));
   });
 });
-// potted plants in corners
+// potted plants in corners (clear of the entrance lane)
 [[-13, 2.5], [13, 2.5], [-13, 15.5], [-2, 15.8]].forEach(([x, z]) => {
   scene.add(cyl(.4, .3, .6, new THREE.MeshStandardMaterial({ color:0xb05a2a, roughness:.8 }), x, .3, z));
   const leaves = new THREE.Mesh(new THREE.SphereGeometry(.62, 10, 8),
@@ -1418,7 +1473,7 @@ const FRYER = { baskets: [] };
     wingsGroup.position.y = .02;
     bGroup.add(wingsGroup);
     // downY chosen so wings straddle the oil surface (y≈2.56): bottoms submerge
-    // (hidden by the opaque oil), tops poke out — they read as actually frying.
+    // (hidden by the opaque oil), tops poke out, they read as actually frying.
     const upY = 3.3, downY = 2.55;
     bGroup.position.set(fx+dx, upY, fz);
     scene.add(bGroup);
@@ -1527,7 +1582,7 @@ const BUILD_ST = { plateGroup: null, wingsGroup: null, sidesGroup: null, dipGrou
   registerClick(garnishGroup, () => uiSetGarnish('none'),
     () => curView === 'build' && curPlate().garnish && curPlate().garnish !== 'none', 'Remove garnish');
 
-  // side bins — a centered grid behind the plate (grows to two rows)
+  // side bins, a centered grid behind the plate (grows to two rows)
   const sPerRow = 4;
   SIDES.forEach((s, i) => {
     const row = Math.floor(i / sPerRow), col = i % sPerRow;
@@ -1549,7 +1604,7 @@ const BUILD_ST = { plateGroup: null, wingsGroup: null, sidesGroup: null, dipGrou
     registerClick(bin, () => uiAddSide(s.id),
       () => curView === 'build' && bin.visible, () => `${s.name} +1`);
   });
-  // dip cups — right of the plate, in short columns
+  // dip cups, right of the plate, in short columns
   DIPS.filter(d => d.id !== 'none').forEach((d, i) => {
     const col = Math.floor(i / 3), row = i % 3;
     const cup = makeDipCup(d);
@@ -1559,7 +1614,7 @@ const BUILD_ST = { plateGroup: null, wingsGroup: null, sidesGroup: null, dipGrou
     registerClick(cup, () => uiSetDip(d.id),
       () => curView === 'build' && cup.visible, `${d.name} dip`);
   });
-  // garnish caddy — left of the plate, the finishing touch
+  // garnish caddy, left of the plate, the finishing touch
   GARNISHES.filter(gn => gn.id !== 'none').forEach((gn, i) => {
     const tray = new THREE.Group();
     tray.add(cyl(.2, .17, .1, M.steel, 0, .05, 0));
@@ -1621,11 +1676,14 @@ function cookColor(cook) {
   }
   return COOK_STOPS[COOK_STOPS.length-1].c.clone();
 }
-function makeWingMesh(color = 0xe8a89b) {
+// type: 'drum' | 'flat' | undefined (random). The chosen type is stored on the
+// mesh so a wing keeps its shape all the way from the basket to the plate.
+function makeWingMesh(color = 0xe8a89b, type) {
   const meat = new THREE.MeshStandardMaterial({ color, roughness:.62 });
   const boneMat = new THREE.MeshStandardMaterial({ color:0xf4ecdc, roughness:.45 });
   const g = new THREE.Group();
-  if (Math.random() < .55) {
+  const wtype = type || (Math.random() < .55 ? 'drum' : 'flat');
+  if (wtype === 'drum') {
     // drumette: plump teardrop with the bone poking out the narrow end
     const prof = [[0,0],[.105,.012],[.15,.07],[.168,.15],[.155,.24],[.115,.32],[.07,.38],[.048,.42],[.001,.45]];
     const body = new THREE.Mesh(
@@ -1645,31 +1703,32 @@ function makeWingMesh(color = 0xe8a89b) {
     knobB.position.set(.33, -.024, .01);
     g.add(shaft, knobA, knobB);
   } else {
-    // wingette (flat): one slim, flattened, tapered segment of meat with two
-    // thin bones poking out the joint end and a small knuckle at the tip end
-    const prof = [[.025,0],[.05,.02],[.08,.08],[.092,.17],[.086,.28],[.068,.39],[.05,.47],[.028,.54],[.001,.575]];
+    // wingette (flat): a meatier flattened segment with two bones poking out the
+    // joint end and a small knuckle at the tip end. Plump, not paper-thin.
+    const prof = [[.03,0],[.07,.02],[.105,.09],[.125,.19],[.118,.30],[.097,.42],[.07,.50],[.04,.56],[.001,.59]];
     const body = new THREE.Mesh(
       new THREE.LatheGeometry(prof.map(p => new THREE.Vector2(p[0], p[1])), 16), meat);
     body.rotation.z = -Math.PI/2;          // length along x, joint end toward -x
-    body.position.x = -.28;
-    body.scale.set(.56, 1, 1.16);          // flatten top-to-bottom, a touch wide
+    body.position.x = -.29;
+    body.scale.set(.76, 1, 1.04);          // flattened, but with real thickness
     body.castShadow = true;
     g.add(body);
-    // a subtle "valley" between the two bones, like a real wingette
-    [-.055, .055].forEach((zz, k) => {
-      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.016, .023, .19, 7), boneMat);
+    // two bones with a subtle valley of meat between them
+    [-.06, .06].forEach((zz, k) => {
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.017, .024, .2, 7), boneMat);
       shaft.rotation.z = Math.PI/2;
-      shaft.position.set(-.19, -.008, zz);
+      shaft.position.set(-.2, -.01, zz);
       shaft.castShadow = true;
-      const knob = new THREE.Mesh(new THREE.SphereGeometry(.03, 8, 6), boneMat);
-      knob.position.set(-.31, -.006, zz - k*.006);  // the two elbow ends offset slightly
+      const knob = new THREE.Mesh(new THREE.SphereGeometry(.032, 8, 6), boneMat);
+      knob.position.set(-.33, -.008, zz - k*.006);  // the two elbow ends offset slightly
       g.add(shaft, knob);
     });
-    const tip = new THREE.Mesh(new THREE.SphereGeometry(.02, 8, 6), boneMat);
-    tip.position.set(.29, 0, 0);
+    const tip = new THREE.Mesh(new THREE.SphereGeometry(.022, 8, 6), boneMat);
+    tip.position.set(.3, 0, 0);
     g.add(tip);
   }
   g.userData.mat = meat;
+  g.userData.wtype = wtype;
   return g;
 }
 // apply cook + sauce coat to a wing's material
@@ -1829,73 +1888,194 @@ const FACES = {};
 ['happy','neutral','grumpy','wow','angry','starry'].forEach(k => { FACES[k].needsUpdate = true; });
 
 const CUSTOMER_NAMES = ['Benny','Greta','Marco','Suki','Dale','Priya','Olive','Chuck','Mabel','Rex',
-  'Twyla','Gus','Nina','Fitz','Cora','Bruno','Hazel','Sven','Lola','Ernie','Wanda','Kip'];
-const SKIN_TONES = [0xf2c79c, 0xe2a878, 0xc4885a, 0x9c6a42, 0x7a4e2e, 0xf2d4b0];
-const SHIRT_COLORS = [0x4a90d9, 0xd94a6a, 0x4ab06a, 0xe8a23a, 0x8a5ad9, 0x3ac4c4, 0xd9d04a, 0xe86a3a];
+  'Twyla','Gus','Nina','Fitz','Cora','Bruno','Hazel','Sven','Lola','Ernie','Wanda','Kip',
+  'Dot','Hank','Roz','Vic','Pearl','Moe','Jin','Esme','Tariq','Bex','Otto','Coral'];
+const SKIN_TONES = [0xf2c79c, 0xe2a878, 0xc4885a, 0x9c6a42, 0x7a4e2e, 0xf2d4b0, 0xd99a6a, 0x8a5a38];
+const SHIRT_COLORS = [0x4a90d9, 0xd94a6a, 0x4ab06a, 0xe8a23a, 0x8a5ad9, 0x3ac4c4, 0xd9d04a, 0xe86a3a,
+  0xe85a8a, 0x6a8ad9, 0x2c9c6a, 0xb0563a];
+const HAIR_COLORS = [0x2c1c10, 0x6a4424, 0xd9c46a, 0xb04a2a, 0x44464a, 0x1a1410, 0x8a8f98, 0xc9744a];
+const PANTS_COLORS = [0x3a3a4a, 0x5a4632, 0x2c4a5a, 0x44403a, 0x4a3a52];
+
+// personality archetypes, with traits that change patience, pace and tips
+const TRAITS = [
+  { id:'regular', label:'Regular',    patience:1.0,  speed:1.0,  tip:1.0,  w:4 },
+  { id:'rushed',  label:'In a Hurry', patience:0.55, speed:1.6,  tip:1.15, w:3, accent:0xff6a3a, restless:true, greet:["Make it quick?","I'm on the clock!","Fast as you can!"] },
+  { id:'chill',   label:'Chill',      patience:1.8,  speed:0.8,  tip:0.85, w:3, accent:0x4ab0d9, greet:["No rush, friend.","Whenever you're ready.","All good, take your time."] },
+  { id:'foodie',  label:'Foodie',     patience:0.95, speed:1.0,  tip:1.5,  w:2, accent:0x9a5ad9, glasses:true, greet:["Make it beautiful.","I know my wings.","Presentation matters."] },
+  { id:'bigtip',  label:'Big Tipper', patience:1.15, speed:1.05, tip:1.9,  w:1, accent:0xffc14d, fancy:true, greet:["Keep the change, chief.","Treat yourself after.","Money's no object."] },
+  { id:'grump',   label:'Grump',      patience:0.72, speed:0.85, tip:0.9,  w:2, accent:0x8a8f98, grumpy:true, greet:["This better be good.","Don't mess it up.","Hmph."] },
+];
+function pickTrait() {
+  const total = TRAITS.reduce((a, t) => a + t.w, 0);
+  let r = rand(total);
+  for (const t of TRAITS) { r -= t.w; if (r <= 0) return t; }
+  return TRAITS[0];
+}
+// body archetypes for silhouette variety
+const BUILDS = [
+  { name:'kid',   p:.12, scale:0.64, bodyR:.36, len:.46, headR:.42, armR:.085 },
+  { name:'round', p:.26, scale:1.0,  bodyR:.57, len:.56, headR:.45, armR:.115 },
+  { name:'tall',  p:.24, scale:1.14, bodyR:.38, len:.74, headR:.39, armR:.092 },
+  { name:'avg',   p:.38, scale:0.98, bodyR:.43, len:.64, headR:.42, armR:.1 },
+];
+function pickBuild() {
+  let r = rand(1);
+  for (const b of BUILDS) { r -= b.p; if (r <= 0) return b; }
+  return BUILDS[BUILDS.length-1];
+}
 
 function makeCustomer() {
   const g = new THREE.Group();
-  const skin = pick(SKIN_TONES), shirt = pick(SHIRT_COLORS);
-  const chunky = rand() < .35, tall = rand(0.92, 1.12);
+  const trait = pickTrait();
+  const B = pickBuild();
+  const skin = pick(SKIN_TONES);
+  // big tippers / accent traits sometimes wear their signature color
+  const shirt = (trait.accent && rand() < .6) ? trait.accent : pick(SHIRT_COLORS);
+  const hairColor = pick(HAIR_COLORS);
   const skinMat = new THREE.MeshStandardMaterial({ color: skin, roughness:.7 });
-  const shirtMat = new THREE.MeshStandardMaterial({ color: shirt, roughness:.75 });
-  const pantsMat = new THREE.MeshStandardMaterial({ color: pick([0x3a3a4a, 0x5a4632, 0x2c4a5a]), roughness:.8 });
+  const shirtMat = new THREE.MeshStandardMaterial({ color: shirt, roughness:.78 });
+  const pantsMat = new THREE.MeshStandardMaterial({ color: pick(PANTS_COLORS), roughness:.82 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: hairColor, roughness:.95 });
+  const darkMat = new THREE.MeshStandardMaterial({ color:0x1a1814, roughness:.5, metalness:.2 });
 
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(chunky ? .52 : .4, .62, 6, 14), shirtMat);
-  body.position.y = 1.18; body.castShadow = true;
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(B.bodyR, B.len, 6, 14), shirtMat);
+  body.position.y = .92 + B.len/2; body.castShadow = true;
   g.add(body);
-  [-.18, .18].forEach(x => {
-    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(.13, .4, 4, 10), pantsMat);
-    leg.position.set(x, .42, 0); leg.castShadow = true;
+  // little collar so the shirt reads as clothing
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(B.bodyR*.55, .05, 6, 14), shirtMat);
+  collar.rotation.x = Math.PI/2; collar.position.y = .92 + B.len - .02;
+  g.add(collar);
+  const legGap = B.bodyR*.45;
+  [-legGap, legGap].forEach(x => {
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(B.bodyR*.3, .42*B.scale, 4, 10), pantsMat);
+    leg.position.set(x, .42*B.scale, 0); leg.castShadow = true;
     g.add(leg);
+    const shoe = new THREE.Mesh(new THREE.CapsuleGeometry(B.bodyR*.3, .12, 4, 8), darkMat);
+    shoe.rotation.x = Math.PI/2; shoe.position.set(x, .08, .07); shoe.castShadow = true;
+    g.add(shoe);
   });
+  const arms = [];
   [-1, 1].forEach(s => {
-    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(.1, .42, 4, 10), shirtMat);
-    arm.position.set(s*(chunky ? .6 : .5), 1.25, 0);
-    arm.rotation.z = s*.25; arm.castShadow = true;
-    g.add(arm);
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(B.armR, .44, 4, 10), shirtMat);
+    arm.position.set(s*(B.bodyR + B.armR + .02), .96 + B.len/2, 0);
+    arm.rotation.z = s*.22; arm.castShadow = true;
+    g.add(arm); arms.push(arm);
+    const hand = new THREE.Mesh(new THREE.SphereGeometry(B.armR*1.05, 8, 6), skinMat);
+    hand.position.set(s*(B.bodyR + B.armR + .12), .72 + B.len/2 - .1, 0);
+    g.add(hand);
   });
-  const head = new THREE.Mesh(new THREE.SphereGeometry(.42, 18, 14), skinMat);
-  head.position.y = 2.12; head.castShadow = true;
+  const headY = .92 + B.len + B.headR + .04;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(B.headR, 18, 14), skinMat);
+  head.position.y = headY; head.castShadow = true;
   g.add(head);
-  const face = new THREE.Mesh(new THREE.PlaneGeometry(.62, .62),
-    new THREE.MeshBasicMaterial({ map: FACES.neutral, transparent: true }));
-  face.position.set(0, 2.14, .39);
+  // ears
+  [-1, 1].forEach(s => {
+    const ear = new THREE.Mesh(new THREE.SphereGeometry(B.headR*.22, 8, 6), skinMat);
+    ear.position.set(s*B.headR*.95, headY, 0); ear.scale.set(.6, 1, .8);
+    g.add(ear);
+  });
+  const face = new THREE.Mesh(new THREE.PlaneGeometry(B.headR*1.5, B.headR*1.5),
+    new THREE.MeshBasicMaterial({ map: trait.grumpy ? FACES.grumpy : FACES.neutral, transparent: true }));
+  face.position.set(0, headY + .02, B.headR*.93);
   g.add(face);
-  // headwear
-  const hw = pick(['cap','cap','beanie','hair','hair','none']);
-  const hatColor = pick(SHIRT_COLORS);
+
+  // ---- hair / headwear ----
+  const hw = trait.fancy ? 'tophat'
+    : pick(['cap','cap','beanie','bun','hairShort','hairShort','hairLong','bald','sunhat']);
+  const hatColor = trait.accent || pick(SHIRT_COLORS);
+  const capMat = new THREE.MeshStandardMaterial({ color: hatColor, roughness:.7 });
   if (hw === 'cap') {
-    const cap = new THREE.Mesh(new THREE.SphereGeometry(.43, 14, 8, 0, Math.PI*2, 0, Math.PI/2.4),
-      new THREE.MeshStandardMaterial({ color: hatColor, roughness:.7 }));
-    cap.position.y = 2.2;
-    const brim = new THREE.Mesh(new THREE.BoxGeometry(.4, .05, .34),
-      new THREE.MeshStandardMaterial({ color: hatColor, roughness:.7 }));
-    brim.position.set(0, 2.34, .45);
+    const cap = new THREE.Mesh(new THREE.SphereGeometry(B.headR*1.04, 14, 8, 0, Math.PI*2, 0, Math.PI/2.4), capMat);
+    cap.position.y = headY + B.headR*.2;
+    const brim = new THREE.Mesh(new THREE.BoxGeometry(B.headR*.95, .05, B.headR*.8), capMat);
+    brim.position.set(0, headY + B.headR*.5, B.headR*1.05);
     g.add(cap, brim);
   } else if (hw === 'beanie') {
-    const b = new THREE.Mesh(new THREE.SphereGeometry(.44, 14, 8, 0, Math.PI*2, 0, Math.PI/2.6),
-      new THREE.MeshStandardMaterial({ color: hatColor, roughness:.95 }));
-    b.position.y = 2.18; g.add(b);
+    const b = new THREE.Mesh(new THREE.SphereGeometry(B.headR*1.06, 14, 8, 0, Math.PI*2, 0, Math.PI/2.6), capMat);
+    b.position.y = headY + B.headR*.12; g.add(b);
     const pom = new THREE.Mesh(new THREE.SphereGeometry(.1, 8, 8),
       new THREE.MeshStandardMaterial({ color:0xf2ece0, roughness:.95 }));
-    pom.position.y = 2.62; g.add(pom);
-  } else if (hw === 'hair') {
-    const h = new THREE.Mesh(new THREE.SphereGeometry(.45, 14, 10, 0, Math.PI*2, 0, Math.PI/2.1),
-      new THREE.MeshStandardMaterial({ color: pick([0x2c1c10, 0x6a4424, 0xd9c46a, 0xb04a2a, 0x44464a]), roughness:.95 }));
-    h.position.y = 2.16; h.scale.set(1, 1.06, 1);
-    g.add(h);
+    pom.position.y = headY + B.headR*1.1; g.add(pom);
+  } else if (hw === 'bun') {
+    const h = new THREE.Mesh(new THREE.SphereGeometry(B.headR*1.08, 14, 10, 0, Math.PI*2, 0, Math.PI/1.9), hairMat);
+    h.position.y = headY + B.headR*.06; g.add(h);
+    const bun = new THREE.Mesh(new THREE.SphereGeometry(B.headR*.42, 10, 8), hairMat);
+    bun.position.set(0, headY + B.headR*.95, -B.headR*.5); g.add(bun);
+  } else if (hw === 'hairShort') {
+    const h = new THREE.Mesh(new THREE.SphereGeometry(B.headR*1.06, 14, 10, 0, Math.PI*2, 0, Math.PI/2.0), hairMat);
+    h.position.y = headY + B.headR*.05; h.scale.set(1, 1.05, 1); g.add(h);
+  } else if (hw === 'hairLong') {
+    const h = new THREE.Mesh(new THREE.SphereGeometry(B.headR*1.06, 14, 10, 0, Math.PI*2, 0, Math.PI/1.7), hairMat);
+    h.position.y = headY + B.headR*.04; g.add(h);
+    const back = new THREE.Mesh(new THREE.CapsuleGeometry(B.headR*.6, B.headR*1.1, 5, 9), hairMat);
+    back.position.set(0, headY - B.headR*.5, -B.headR*.75); g.add(back);
+  } else if (hw === 'sunhat') {
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(B.headR*1.7, B.headR*1.7, .04, 18), capMat);
+    brim.position.y = headY + B.headR*.5;
+    const top = new THREE.Mesh(new THREE.SphereGeometry(B.headR*.95, 12, 8, 0, Math.PI*2, 0, Math.PI/2.4), capMat);
+    top.position.y = headY + B.headR*.5; g.add(brim, top);
+  } else if (hw === 'tophat') {
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(B.headR*1.4, B.headR*1.4, .04, 18), darkMat);
+    brim.position.y = headY + B.headR*.55;
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(B.headR*.95, B.headR*.95, B.headR*1.4, 16), darkMat);
+    tube.position.y = headY + B.headR*1.25;
+    const band = new THREE.Mesh(new THREE.CylinderGeometry(B.headR*.97, B.headR*.97, .1, 16),
+      new THREE.MeshStandardMaterial({ color: hatColor, roughness:.6 }));
+    band.position.y = headY + B.headR*.66; g.add(brim, tube, band);
+  } else { // bald, give a faint hair ring
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(B.headR*.78, B.headR*.13, 6, 14), hairMat);
+    ring.rotation.x = Math.PI/2; ring.position.y = headY - B.headR*.15; g.add(ring);
   }
-  g.scale.setScalar(tall);
+
+  // glasses
+  if (trait.glasses || rand() < .22) {
+    const lensMat = new THREE.MeshStandardMaterial({ color:0x222222, roughness:.3, metalness:.4 });
+    [-1, 1].forEach(s => {
+      const lens = new THREE.Mesh(new THREE.TorusGeometry(B.headR*.28, .025, 6, 12), lensMat);
+      lens.position.set(s*B.headR*.42, headY + .02, B.headR*1.0); // in front of the face plane
+      g.add(lens);
+    });
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(B.headR*.3, .03, .03), lensMat);
+    bridge.position.set(0, headY + .02, B.headR*1.0); g.add(bridge);
+  }
+  // beard (skip kids)
+  if (B.name !== 'kid' && rand() < .25) {
+    const beard = new THREE.Mesh(new THREE.SphereGeometry(B.headR*.8, 12, 8, 0, Math.PI*2, Math.PI*.55, Math.PI*.5), hairMat);
+    beard.position.set(0, headY - B.headR*.32, B.headR*.32); beard.scale.set(1, .9, .7);
+    g.add(beard);
+  }
+
+  g.scale.setScalar(B.scale);
   scene.add(g);
 
+  const baseSpeed = rand(2.0, 2.6) * trait.speed;
   const cust = {
-    group: g, face, name: pick(CUSTOMER_NAMES),
-    walkTarget: null, onArrive: null, speed: rand(2.0, 2.6), walkT: 0,
-    patience: 100, order: null, state: 'entering',
+    group: g, face, arms, name: pick(CUSTOMER_NAMES),
+    trait, build: B.name,
+    walkTarget: null, onArrive: null, speed: baseSpeed, walkT: 0, idleT: rand(6.28),
+    patience: 100, patienceRate: 1/trait.patience, tipMul: trait.tip,
+    order: null, state: 'entering', entered: false,
+    _path: null, _pathFirst: null, _pathDone: null,
     setExpression(e) { face.material.map = FACES[e] || FACES.neutral; face.material.needsUpdate = true; },
-    headPos() { return g.localToWorld(new THREE.Vector3(0, 2.75, 0)); },
+    greetLine() { return trait.greet ? '"' + pick(trait.greet) + '"' : null; },
+    // anchor a bit above the crown of the head, so bubbles/buttons clear the face
+    headPos() { return g.localToWorld(new THREE.Vector3(0, headY + B.headR + .35, 0)); },
     moveTo(p, onArrive) { this.walkTarget = p.clone(); this.onArrive = onArrive || null; },
+    // walk a sequence of waypoints; onFirst fires when the first one is reached
+    movePath(points, onArrive, onFirst) {
+      this._path = points.slice();
+      this._pathFirst = onFirst || null;
+      this._pathDone = onArrive || null;
+      this._stepPath();
+    },
+    _stepPath() {
+      const p = this._path.shift();
+      this.moveTo(p, () => {
+        if (this._pathFirst) { this._pathFirst(); this._pathFirst = null; }
+        if (this._path && this._path.length) this._stepPath();
+        else { const cb = this._pathDone; this._pathDone = null; this._path = null; cb && cb(); }
+      });
+    },
     faceToward(p) {
       const d = Math.atan2(p.x - g.position.x, p.z - g.position.z);
       tween(.3, k => { g.rotation.y = lerpAngle(g.rotation.y, d, k); });
@@ -1922,7 +2102,14 @@ function makeCustomer() {
           g.rotation.y = lerpAngle(g.rotation.y, Math.atan2(d.x, d.z), .15);
           this.walkT += dt*10;
           g.position.y = Math.abs(Math.sin(this.walkT))*.08;
+          g.rotation.z = 0;
         }
+      } else if (this.state === 'waiting' || this.state === 'queued') {
+        // idle personality: a gentle sway, restless folks fidget faster
+        this.idleT += dt;
+        const rate = trait.restless ? 5.5 : 1.3;
+        g.rotation.z = Math.sin(this.idleT*rate)*(trait.restless ? .035 : .018);
+        g.position.y = trait.restless ? Math.abs(Math.sin(this.idleT*rate))*.025 : 0;
       }
     },
     dispose() { removeClickable(g); scene.remove(g); },
@@ -1940,19 +2127,19 @@ function lerpAngle(a, b, t) {
    ============================================================ */
 const SAVE_KEY = 'sauced-save-v2';
 const UPGRADES = [
-  { id:'fastfry',  name:'Turbo Fryer',   desc:'Hotter oil — wings cook 30% faster.', cost:45 },
-  { id:'tongs',    name:'Golden Tongs',  desc:'Wider perfect-cook window on the meter.', cost:70 },
-  { id:'bigbasket',name:'Jumbo Baskets', desc:'Baskets hold 16 wings — cook in bulk.', cost:85 },
-  { id:'sauceboss',name:'Sauce Boss',    desc:'Every toss coats the wings faster.', cost:65 },
-  { id:'slots',    name:'Extra Hand',    desc:'Juggle one more order at a time.', cost:95 },
-  { id:'charm',    name:'Charm School',  desc:'Customers stay patient 35% longer.', cost:60 },
-  { id:'loyal',    name:'Loyalty Cards', desc:'+12% on every order total.', cost:110 },
-  { id:'disco',    name:'Disco Night',   desc:'Party lights, party mood — tips +15%.', cost:130 },
+  { id:'fastfry',  name:'Turbo Fryer',   desc:'Cranks the oil. Wings cook 30% faster.', cost:45 },
+  { id:'tongs',    name:'Golden Tongs',  desc:'Forgiving grip, wider perfect-cook window.', cost:70 },
+  { id:'bigbasket',name:'Jumbo Baskets', desc:'16 wings a basket for serious bulk batches.', cost:85 },
+  { id:'sauceboss',name:'Sauce Boss',    desc:'Fewer tosses to drench a batch.', cost:65 },
+  { id:'slots',    name:'Extra Hand',    desc:'One more ticket on the rail at a time.', cost:95 },
+  { id:'charm',    name:'Charm School',  desc:'Folks wait 35% longer without grumbling.', cost:60 },
+  { id:'loyal',    name:'Loyalty Cards', desc:'Regulars tip +12% on every total.', cost:110 },
+  { id:'disco',    name:'Disco Night',   desc:'Lights up, mood up, tips up 15%.', cost:130 },
 ];
 const G = {
   state:'title', day:1, money:0, streak:0, served:0, customersToday:5,
   queue:[], leaving:[], orders:[], selId:null, spawned:0, spawnT:1.5,
-  bowl:{ count:0, cook:0, sauce:null, coat:0 },
+  bowl: blankBowl(),
   upgrades:{}, dayEarnings:0, dayStarSum:0, serving:false, bestCombo:0,
 };
 const unlockedSauces   = () => SAUCES.filter(s => s.day <= G.day);
@@ -1961,7 +2148,8 @@ const unlockedDips      = () => DIPS.filter(s => s.day <= G.day);
 const unlockedGarnishes = () => GARNISHES.filter(s => s.day <= G.day && s.id !== 'none');
 const fmt$ = v => '$' + v.toFixed(2);
 const hex = c => '#' + c.toString(16).padStart(6, '0');
-function blankPlate() { return { wings:0, cook:0, sauce:null, coat:0, sides:{}, dip:'none', garnish:'none' }; }
+function blankPlate() { return { wings:0, cook:0, sauce:null, coat:0, sides:{}, dip:'none', garnish:'none', types:[] }; }
+function blankBowl() { return { count:0, cook:0, sauce:null, coat:0, types:[] }; }
 function maxOrders() {
   let n = 3;                  // juggle a few from day one
   if (G.day >= 4) n++;
@@ -1985,7 +2173,7 @@ function loadGame() {
 }
 
 /* ============================================================
-   ORDERS — multiple at once
+   ORDERS, multiple at once
    ============================================================ */
 let orderSeq = 0;
 const DUMMY_PLATE = blankPlate();
@@ -2027,11 +2215,11 @@ function reqProgress(req, p) {
   }
   if (req.dip !== 'none') {
     const dp = dipById(req.dip);
-    rows.push({ ok: p.dip === req.dip, html: `${chip(dp.color)}${dp.name} dip`, prog: p.dip === req.dip ? '✓' : '–' });
+    rows.push({ ok: p.dip === req.dip, html: `${chip(dp.color)}${dp.name} dip`, prog: p.dip === req.dip ? '✓' : '·' });
   }
   if (req.garnish !== 'none') {
     const gn = garnishById(req.garnish);
-    rows.push({ ok: p.garnish === req.garnish, html: `${chip(gn.color)}${gn.name}`, prog: p.garnish === req.garnish ? '✓' : '–' });
+    rows.push({ ok: p.garnish === req.garnish, html: `${chip(gn.color)}${gn.name}`, prog: p.garnish === req.garnish ? '✓' : '·' });
   }
   return { rows, done: rows.every(r => r.ok) };
 }
@@ -2046,7 +2234,7 @@ function renderTickets() {
     card.className = 'ticketCard' + (o.id === G.selId ? ' sel' : '') + (done ? ' ready' : '');
     card.dataset.id = o.id;
     card.innerHTML = `
-      <div class="tcHead"><b>${o.cust.name}</b>${done ? '<span class="tcReady">READY</span>' : ''}</div>
+      <div class="tcHead"><b>${o.cust.name}</b><span class="tcTag">${o.cust.trait.label}</span>${done ? '<span class="tcReady">READY</span>' : ''}</div>
       <div class="tcPat"><i style="width:${o.cust.patience}%"></i></div>
       <div class="tcRows">${rows.map(r =>
         `<div class="tcRow ${r.ok ? 'ok' : ''}">${r.html}<span class="tcProg">${r.prog}</span></div>`).join('')}</div>`;
@@ -2067,25 +2255,38 @@ function selectOrder(id) {
 /* ============================================================
    CUSTOMER FLOW
    ============================================================ */
+// the queue hugs the counter (front-right), the wait spots sit front-left, and
+// everyone enters/exits through a clear lane down the right side past the door
+const COUNTER_PT = new THREE.Vector3(0, 0, 2.6);
+const ENTRY_WP = new THREE.Vector3(10.5, 0, 7.5);
 const QUEUE_SLOTS = [
-  new THREE.Vector3(2.2, 0, 4.5),
-  new THREE.Vector3(4.2, 0, 5.8),
-  new THREE.Vector3(6.0, 0, 7.3),
-  new THREE.Vector3(7.6, 0, 9.0),
-  new THREE.Vector3(9.0, 0, 10.8),
+  new THREE.Vector3(0.5, 0, 5.0),
+  new THREE.Vector3(2.6, 0, 5.3),
+  new THREE.Vector3(4.6, 0, 5.7),
+  new THREE.Vector3(6.4, 0, 6.1),
+  new THREE.Vector3(8.0, 0, 6.5),
 ];
 const WAIT_SLOTS = [
-  new THREE.Vector3(-1.6, 0, 4.4),
-  new THREE.Vector3(-3.4, 0, 4.5),
-  new THREE.Vector3(-5.2, 0, 4.7),
-  new THREE.Vector3(-1.8, 0, 6.2),
-  new THREE.Vector3(-3.8, 0, 6.3),
-  new THREE.Vector3(-5.8, 0, 6.4),
+  new THREE.Vector3(-1.8, 0, 5.0),
+  new THREE.Vector3(-3.6, 0, 5.2),
+  new THREE.Vector3(-5.4, 0, 5.5),
+  new THREE.Vector3(-2.4, 0, 6.7),
+  new THREE.Vector3(-4.2, 0, 6.9),
+  new THREE.Vector3(-6.0, 0, 7.1),
 ];
 function spawnCustomer() {
   const c = makeCustomer();
   c.group.position.copy(DOOR_POS);
   c.order = genOrder();
+  // a couple of traits shape the order: foodies want the full works, rushed
+  // folks keep it simple
+  if (c.trait.id === 'foodie' && unlockedGarnishes().length) {
+    if (c.order.garnish === 'none') c.order.garnish = pick(unlockedGarnishes()).id;
+    if (!c.order.side) c.order.side = { id: pick(unlockedSides()).id, count: randi(2, 4) };
+  } else if (c.trait.id === 'rushed') {
+    c.order.wings = Math.min(c.order.wings, 6);
+    c.order.garnish = 'none';
+  }
   c.patience = 100;
   c.orderId = null;
   G.queue.push(c);
@@ -2094,25 +2295,33 @@ function spawnCustomer() {
     else if (G.queue[0] === c && c.state === 'waiting') takeOrder();
   }, () => curView === 'counter' && (c.orderId != null ||
        (G.queue[0] === c && c.state === 'waiting' && G.orders.length < maxOrders())),
-     () => c.orderId != null ? `${c.name}'s ticket` : `Take ${c.name}'s order`);
+     () => c.orderId != null ? `${c.name} · ${c.trait.label}` : `Take ${c.name}'s order`);
   AudioFX.ding();
-  sendQueueToSlots();
+  restage();
 }
-function sendQueueToSlots() {
+// route everyone in the queue to their slot; newcomers come in via the lane
+function restage() {
   G.queue.forEach((c, i) => {
     const slot = QUEUE_SLOTS[Math.min(i, QUEUE_SLOTS.length-1)];
     c.state = 'walking';
-    c.moveTo(slot, () => {
+    const arrive = () => {
       c.state = i === 0 ? 'waiting' : 'queued';
-      c.faceToward(new THREE.Vector3(0, 0, 0));
-      c.setExpression(i === 0 ? 'neutral' : 'neutral');
-    });
+      c.faceToward(COUNTER_PT);
+      if (i === 0 && !c._greeted) {
+        c._greeted = true;
+        const line = c.greetLine();
+        if (line && curView === 'counter') showBubble(c, line, 2.6);
+      }
+      c.setExpression(c.patience < 40 ? 'grumpy' : c.trait.grumpy ? 'grumpy' : 'neutral');
+    };
+    if (c.entered) c.moveTo(slot, arrive);
+    else c.movePath([ENTRY_WP, slot], arrive, () => { c.entered = true; });
   });
 }
 function takeOrder() {
   const c = G.queue[0];
   if (!c || c.state !== 'waiting') return;
-  if (G.orders.length >= maxOrders()) { showToast(`Hands full! Serve an order first (max ${maxOrders()}).`, 'bad'); return; }
+  if (G.orders.length >= maxOrders()) { showToast('Whoa, hands full! Clear a ticket first.', 'bad'); return; }
   G.queue.shift();
   const o = { id: ++orderSeq, cust: c, req: c.order, plate: blankPlate() };
   c.orderId = o.id;
@@ -2120,14 +2329,14 @@ function takeOrder() {
   c.setExpression('happy');
   G.orders.push(o);
   const slot = WAIT_SLOTS[(G.orders.length-1) % WAIT_SLOTS.length];
-  c.moveTo(slot, () => c.faceToward(new THREE.Vector3(0, 0, 0)));
+  c.moveTo(slot, () => c.faceToward(COUNTER_PT)); // wait spot is in the clear front zone
   AudioFX.click(); AudioFX.pop();
   showBubble(c, `"${orderText(c.order)}"`, 5);
   G.selId = o.id;
   renderTickets();
   renderPlate(o);
-  sendQueueToSlots();
-  showToast('Order taken — fire up the fryer!', 'good');
+  restage();
+  showToast("Ticket's up! Hit the fryers.", 'good');
 }
 let bubbleCust = null, bubbleTimer = 0;
 function showBubble(cust, html, secs = 4) {
@@ -2176,8 +2385,8 @@ function buildFryUI() {
   cards.sort((a, b) => b.x - a.x).forEach(c => root.appendChild(c.card));
 }
 function addWings(b) {
-  if (b.count >= basketCap()) { showToast('Basket is full!', 'bad'); return; }
-  if (b.count > 0 && b.cook > .25) { showToast('Those wings are already cooking!', 'bad'); return; }
+  if (b.count >= basketCap()) { showToast("That basket's packed tight!", 'bad'); return; }
+  if (b.count > 0 && b.cook > .25) { showToast("Those are already sizzlin'!", 'bad'); return; }
   for (let i = 0; i < 2; i++) {
     const w = makeWingMesh();
     w.position.set(rand(-.28,.28), rand(-.07,.0), rand(-.34,.34));
@@ -2216,16 +2425,17 @@ function toggleBasket(b, ui) {
   anyFrying ? AudioFX.sizzleOn() : AudioFX.sizzleOff();
 }
 function sendToSauce(b) {
-  if (b.count === 0) { showToast('That basket is empty!', 'bad'); return; }
-  if (b.lowered) { showToast('Raise the basket first!', 'bad'); return; }
-  if (G.bowl.count > 0) { showToast('The sauce bowl is already full — plate those first!', 'bad'); return; }
-  G.bowl = { count: b.count, cook: b.cook, sauce: null, coat: 0 };
+  if (b.count === 0) { showToast('Nothing in that basket to send.', 'bad'); return; }
+  if (b.lowered) { showToast('Pull the basket up first!', 'bad'); return; }
+  if (G.bowl.count > 0) { showToast("Bowl's still loaded, plate those first.", 'bad'); return; }
+  // carry each wing's shape (drum/flat) over so it stays the same wing later
+  G.bowl = { count: b.count, cook: b.cook, sauce: null, coat: 0, types: b.wings.map(w => w.userData.wtype) };
   b.wings.forEach(w => b.wingsGroup.remove(w));
   burstSteam(b.group.position, 5);
   b.wings = []; b.count = 0; b.cook = 0;
   fillBowlWings();
   AudioFX.whoosh(); AudioFX.plop();
-  showToast(`${G.bowl.count} wings in the bowl — pour a sauce!`, 'good');
+  showToast(`${G.bowl.count} wings in the bowl. Sauce 'em up!`, 'good');
   goView('sauce');
   updateSauceUI();
 }
@@ -2234,7 +2444,7 @@ function fillBowlWings() {
   bowlWings.forEach(w => SAUCE_ST.wingsGroup.remove(w));
   bowlWings.length = 0;
   for (let i = 0; i < G.bowl.count; i++) {
-    const w = makeWingMesh();
+    const w = makeWingMesh(0xe8a89b, G.bowl.types[i]);
     const a = i/G.bowl.count*Math.PI*2;
     const r = i % 2 ? .42 : .2;
     w.position.set(Math.cos(a)*r, .06 + (i%3)*.07, Math.sin(a)*r);
@@ -2271,8 +2481,8 @@ function uiSelectSauce(id) {
   updateSauceUI();
 }
 function tossWings() {
-  if (G.bowl.count === 0) { showToast('Nothing in the bowl — fry wings first!', 'bad'); return; }
-  if (!G.bowl.sauce) { showToast('Pour in a sauce first — click a pot!', 'bad'); return; }
+  if (G.bowl.count === 0) { showToast('Empty bowl. Go fry a batch.', 'bad'); return; }
+  if (!G.bowl.sauce) { showToast('Pick a sauce, tap a pot to pour.', 'bad'); return; }
   const s = sauceById(G.bowl.sauce);
   const gain = G.upgrades.sauceboss ? rand(.26, .34) : rand(.16, .23);
   G.bowl.coat = clamp(G.bowl.coat + gain, 0, 1);
@@ -2291,41 +2501,44 @@ function tossWings() {
   });
   burstSplat(SAUCE_ST.bowl.position.clone().add(new THREE.Vector3(0, .7, 0)), s.color, 8);
   updateSauceUI();
-  if (G.bowl.coat >= 1) { AudioFX.ding(); showToast('Fully coated!', 'good', 1600); }
+  if (G.bowl.coat >= 1) { AudioFX.ding(); showToast('Drenched. Beautiful.', 'good', 1600); }
 }
 function updateSauceUI() {
   const c = G.bowl;
   $('coatBar').style.width = (c.coat*100) + '%';
-  $('coatTxt').textContent = c.count === 0 ? 'Bowl empty'
-    : !c.sauce ? `${c.count} wings — pick a sauce!`
+  $('coatTxt').textContent = c.count === 0 ? 'Empty bowl'
+    : !c.sauce ? `${c.count} wings, pick a sauce`
     : `${c.count} wings · ${Math.round(c.coat*100)}% ${sauceById(c.sauce).name}`;
   const o = selOrder();
   $('toPlateBtn').textContent = o
     ? `TO ${o.cust.name.toUpperCase()}'S PLATE`
     : 'TO PLATE';
 }
-// transfer wings from the bowl onto the SELECTED order's plate — only what that
+// transfer wings from the bowl onto the SELECTED order's plate, only what that
 // order still needs, so a big saucy batch can be split across several plates.
 function sendToPlate() {
   const o = selOrder();
-  if (!o) { showToast('Pick an order ticket first!', 'bad'); return; }
-  if (G.bowl.count === 0) { showToast('The bowl is empty!', 'bad'); return; }
+  if (!o) { showToast('Grab a ticket first!', 'bad'); return; }
+  if (G.bowl.count === 0) { showToast("Bowl's empty.", 'bad'); return; }
   const p = o.plate;
   if (p.wings > 0 && p.sauce !== G.bowl.sauce) {
-    showToast(`That plate already has ${p.sauce ? sauceById(p.sauce).name : 'plain'} wings.`, 'bad'); return;
+    showToast(`That plate's already got ${p.sauce ? sauceById(p.sauce).name : 'plain'} wings.`, 'bad'); return;
   }
   const need = Math.max(0, o.req.wings - p.wings);
-  if (need === 0) { showToast(`${o.cust.name}'s plate already has enough wings.`, 'bad'); return; }
+  if (need === 0) { showToast(`${o.cust.name}'s plate is stacked already.`, 'bad'); return; }
   const move = Math.min(G.bowl.count, need);
   // plate inherits the batch's cook/sauce/coat (weighted toward the worse coat)
   if (p.wings === 0) { p.cook = G.bowl.cook; p.sauce = G.bowl.sauce; p.coat = G.bowl.coat; }
   else { p.coat = Math.min(p.coat, G.bowl.coat); p.cook = (p.cook + G.bowl.cook)/2; }
   p.wings += move;
+  // move the matching wing shapes over so plated wings look like the fried ones
+  p.types = p.types.concat(G.bowl.types.slice(0, move));
+  G.bowl.types = G.bowl.types.slice(move);
   G.bowl.count -= move;
   if (G.bowl.count <= 0) {
     bowlWings.forEach(w => SAUCE_ST.wingsGroup.remove(w));
     bowlWings.length = 0;
-    G.bowl = { count:0, cook:0, sauce:null, coat:0 };
+    G.bowl = blankBowl();
     SAUCE_ST.liquid.visible = false;
   } else {
     fillBowlWings(); // re-lay the leftover wings
@@ -2335,27 +2548,27 @@ function sendToPlate() {
   goView('build');
   updateSauceUI();
   showToast(G.bowl.count > 0
-    ? `Plated ${move} — ${G.bowl.count} saucy wings left in the bowl`
-    : `Plated ${move} wings for ${o.cust.name}`, 'good');
+    ? `Plated ${move}. ${G.bowl.count} saucy ones still in the bowl.`
+    : `${move} wings up for ${o.cust.name}!`, 'good');
 }
 function trashBowl() {
   if (G.bowl.count === 0) return;
   bowlWings.forEach(w => SAUCE_ST.wingsGroup.remove(w));
   bowlWings.length = 0;
-  G.bowl = { count:0, cook:0, sauce:null, coat:0 };
+  G.bowl = blankBowl();
   SAUCE_ST.liquid.visible = false;
   burstSteam(SAUCE_ST.bowl.position, 4);
   AudioFX.buzz();
-  showToast('Bowl emptied.', '', 1400);
+  showToast('Dumped the bowl.', '', 1400);
   updateSauceUI();
 }
 
 /* ============================================================
-   BUILD STATION LOGIC — operates on the selected order's plate
+   BUILD STATION LOGIC, operates on the selected order's plate
    ============================================================ */
 function uiAddSide(id) {
   const o = selOrder();
-  if (!o) { showToast('Pick an order ticket first!', 'bad'); return; }
+  if (!o) { showToast('Grab a ticket first!', 'bad'); return; }
   const cur = o.plate.sides[id] || 0;
   if (cur >= 10) return;
   o.plate.sides[id] = cur + 1;
@@ -2398,7 +2611,7 @@ function renderPlate(o) {
   const p = o.plate;
   const sauce = p.sauce ? sauceById(p.sauce) : null;
   for (let i = 0; i < p.wings; i++) {
-    const w = makeWingMesh();
+    const w = makeWingMesh(0xe8a89b, p.types[i]);
     const a = i/Math.max(1, p.wings)*Math.PI*2 - Math.PI/2;
     const r = p.wings > 7 ? (i % 2 ? .66 : .36) : .5;
     w.position.set(Math.cos(a)*r, .16 + (i % 2)*.04, Math.sin(a)*r*.8);
@@ -2433,8 +2646,8 @@ function renderPlate(o) {
    ============================================================ */
 function serve() {
   const o = selOrder();
-  if (!o) { showToast('No order selected — take one at the counter!', 'bad'); return; }
-  if (o.plate.wings === 0) { showToast('The plate is empty!', 'bad'); return; }
+  if (!o) { showToast('No ticket up. Take an order first.', 'bad'); return; }
+  if (o.plate.wings === 0) { showToast('Empty plate, load it up!', 'bad'); return; }
   if (G.serving) return;
   G.serving = true;
   goView('counter');
@@ -2461,7 +2674,7 @@ function evaluateServe(o) {
 
   const sauceMatch = p.sauce === req.sauce;
   const sauceScore = sauceMatch ? .4 + .6*p.coat : (p.sauce ? .2 : .05);
-  lines.push(`${sauceMatch && p.coat > .9 ? '✓' : '✗'} Sauce: ${p.sauce ? sauceById(p.sauce).name : 'none'} (${Math.round(p.coat*100)}%)${sauceMatch ? '' : ' — wanted ' + sauceById(req.sauce).name}`);
+  lines.push(`${sauceMatch && p.coat > .9 ? '✓' : '✗'} Sauce: ${p.sauce ? sauceById(p.sauce).name : 'none'} (${Math.round(p.coat*100)}%)${sauceMatch ? '' : ', wanted ' + sauceById(req.sauce).name}`);
 
   let sideScore = 1, sidesExact = true;
   const extraSides = Object.keys(p.sides).filter(k => !req.side || k !== req.side.id)
@@ -2478,11 +2691,11 @@ function evaluateServe(o) {
 
   const dipScore = p.dip === req.dip ? 1 : 0;
   if (req.dip !== 'none' || p.dip !== 'none')
-    lines.push(`${dipScore ? '✓' : '✗'} Dip: ${dipById(p.dip).name}${dipScore ? '' : ' — wanted ' + dipById(req.dip).name}`);
+    lines.push(`${dipScore ? '✓' : '✗'} Dip: ${dipById(p.dip).name}${dipScore ? '' : ', wanted ' + dipById(req.dip).name}`);
 
   const garnScore = p.garnish === req.garnish ? 1 : (req.garnish === 'none' ? .4 : 0);
   if (req.garnish !== 'none' || p.garnish !== 'none')
-    lines.push(`${p.garnish === req.garnish ? '✓' : '✗'} Garnish: ${garnishById(p.garnish).name}${p.garnish === req.garnish ? '' : ' — wanted ' + garnishById(req.garnish).name}`);
+    lines.push(`${p.garnish === req.garnish ? '✓' : '✗'} Garnish: ${garnishById(p.garnish).name}${p.garnish === req.garnish ? '' : ', wanted ' + garnishById(req.garnish).name}`);
 
   // presentation rewards a complete, exact, neat plate
   const neat = [wingDiff === 0, p.coat > .9 && sauceMatch, sidesExact, dipScore === 1, p.garnish === req.garnish];
@@ -2495,7 +2708,8 @@ function evaluateServe(o) {
   const base = (1.4*req.wings + .8*(req.side ? req.side.count : 0)
     + (req.dip !== 'none' ? 1 : 0) + (req.garnish !== 'none' ? .6 : 0)) * (G.upgrades.loyal ? 1.12 : 1);
   const patMult = .5 + .5*(c.patience/100);
-  const tip = base * .5 * total * patMult * (G.upgrades.disco ? 1.15 : 1) * (presScore >= 1 ? 1.25 : 1);
+  // the customer's trait flavors how generously they tip
+  const tip = base * .5 * total * patMult * (c.tipMul || 1) * (G.upgrades.disco ? 1.15 : 1) * (presScore >= 1 ? 1.25 : 1);
   const pay = base*Math.max(.25, total*.85 + .15) + tip;
   G.money += pay; G.dayEarnings += pay; G.dayStarSum += stars;
 
@@ -2521,16 +2735,17 @@ function evaluateServe(o) {
   }
   AudioFX.chaching();
   showToast(lines.join('<br>'), stars >= 4 ? 'good' : stars >= 3 ? '' : 'bad', 4200);
-  showBubble(c, stars >= 4 ? pick(['"Incredible!"','"Best wings in town!"','"WOW!"']) :
-             stars >= 3 ? pick(['"Pretty good."','"Thanks!"']) :
-             pick(['"Hmm…"','"My grandma fries better."','"Disappointing."']), 2.5);
+  showBubble(c, stars >= 4 ? pick(['"These are unreal!"','"Best wings in the city!"','"I\'m telling everyone."','"Crispy little miracles."']) :
+             stars >= 3 ? pick(['"Solid. Thanks, chef."','"That hit the spot."','"Good stuff."']) :
+             pick(['"...the heck is this?"','"My grandma fries better."','"I waited for THIS?"','"Yikes."']), 2.5);
 
   setTimeout(() => {
     // remove order, send customer off
     G.orders = G.orders.filter(x => x.id !== o.id);
     c.orderId = null;
     c.state = 'leaving';
-    c.moveTo(DOOR_POS, () => { c.dispose(); G.leaving.splice(G.leaving.indexOf(c), 1); });
+    // walk out via the clear lane so they don't cut through the dining tables
+    c.movePath([ENTRY_WP, DOOR_POS], () => { c.dispose(); G.leaving.splice(G.leaving.indexOf(c), 1); });
     G.leaving.push(c);
     // pick another order to show, reset the plate prop home
     G.selId = G.orders.length ? G.orders[0].id : null;
@@ -2550,7 +2765,7 @@ function evaluateServe(o) {
 function startDay() {
   G.state = 'day';
   G.served = 0; G.spawned = 0; G.dayEarnings = 0; G.dayStarSum = 0; G.streak = 0;
-  G.orders = []; G.selId = null; G.bowl = { count:0, cook:0, sauce:null, coat:0 };
+  G.orders = []; G.selId = null; G.bowl = blankBowl();
   G.customersToday = Math.min(5 + Math.floor(G.day*1.5), 16);
   G.spawnT = 1;
   buildStationUI();
@@ -2558,7 +2773,7 @@ function startDay() {
   renderTickets(); renderPlate(null);
   updateHUD();
   goView('counter');
-  bigBanner(`DAY ${G.day} — OPEN!`);
+  bigBanner(`DAY ${G.day}: WE'RE OPEN!`);
   AudioFX.jingle();
   if (G.upgrades.disco) { disco.visible = true; discoLights.forEach(l => l.intensity = 30); }
 }
@@ -2587,7 +2802,7 @@ function renderUpgrades(gridId = 'upGrid') {
     card.className = 'upCard' + (owned ? ' owned' : '');
     card.innerHTML = `<b>${u.name}</b><small>${u.desc}</small>
       <button class="sbtn" ${owned || G.money < u.cost ? 'disabled' : ''}>
-        ${owned ? '✓ Owned' : 'Buy — ' + fmt$(u.cost)}</button>`;
+        ${owned ? '✓ Owned' : 'Buy: ' + fmt$(u.cost)}</button>`;
     if (!owned) card.querySelector('button').onclick = () => {
       if (G.money < u.cost) return;
       G.money -= u.cost;
@@ -2595,7 +2810,7 @@ function renderUpgrades(gridId = 'upGrid') {
       AudioFX.chaching();
       saveGame(); renderUpgrades(gridId); updateHUD();
       if ($('shopMoney')) $('shopMoney').textContent = fmt$(G.money);
-      showToast(`${u.name} purchased!`, 'good');
+      showToast(`${u.name}, unlocked!`, 'good');
     };
     grid.appendChild(card);
   });
@@ -2631,10 +2846,10 @@ function updateHUD() {
   $('streakLabel').textContent = G.streak;
 }
 const HINTS = {
-  counter: 'Click waiting customers to take orders · click a standing customer to plate theirs',
-  fry: 'Click a basket to drop & raise it — pull up in the green zone',
-  sauce: 'Pour a sauce, toss to coat, then send to the selected order\'s plate',
-  build: 'Pick a ticket, then click bins, dip cups & garnishes to plate it — then serve',
+  counter: 'Tap a customer in line to take their order. Tap a seated one to work their ticket.',
+  fry: "Drop a basket, then yank it up while the meter's sitting in the green.",
+  sauce: "Pour a pot, toss till they're drenched, then send 'em to your ticket.",
+  build: 'Pick a ticket, pile on the sides, dip and garnish, then send it out hot.',
 };
 function onViewChanged(name) {
   document.querySelectorAll('#stationNav button').forEach(b =>
@@ -2676,26 +2891,77 @@ $('serveBtn').onclick = serve;
 $('trashPlateBtn').onclick = clearPlate;
 $('takeOrderBtn').onclick = takeOrder;
 
-/* ---- main menu navigation ---- */
-function openMenuScreen(id) {
+/* ---- menus: title menu, shop & how-to, and an always-on pause menu ---- */
+let menuReturn = 'titleScreen';   // where a sub-screen's BACK button returns to
+function openSub(id, from) {
   AudioFX.init(); AudioFX.click();
+  menuReturn = from;
   if (id === 'menuShop') { renderUpgrades('shopGrid'); $('shopMoney').textContent = fmt$(G.money); }
-  $('titleScreen').classList.add('hidden');
+  $(from).classList.add('hidden');
   $(id).classList.remove('hidden');
 }
-$('menuShopBtn').onclick = () => openMenuScreen('menuShop');
-$('menuHelpBtn').onclick = () => openMenuScreen('menuHelp');
-$('menuCreditsBtn').onclick = () => openMenuScreen('menuCredits');
+$('menuShopBtn').onclick  = () => openSub('menuShop', 'titleScreen');
+$('menuHelpBtn').onclick  = () => openSub('menuHelp', 'titleScreen');
+$('pauseShopBtn').onclick = () => openSub('menuShop', 'pauseMenu');
+$('pauseHelpBtn').onclick = () => openSub('menuHelp', 'pauseMenu');
 document.querySelectorAll('.menuBack').forEach(b => b.onclick = () => {
   AudioFX.click();
   $(b.dataset.menu).classList.add('hidden');
+  $(menuReturn).classList.remove('hidden');
+});
+
+// the menu/shop is reachable any time: pause the day and pop it open
+function openPause() {
+  if (G.state !== 'day') return;
+  AudioFX.init(); AudioFX.click();
+  G._resumeState = G.state;
+  G.state = 'paused';
+  $('takeOrderBtn').classList.remove('show');
+  $('pauseMenu').classList.remove('hidden');
+}
+function closePause() {
+  $('pauseMenu').classList.add('hidden');
+  if (G._resumeState) { G.state = G._resumeState; G._resumeState = null; }
+}
+function resetToTitle() {
+  G.state = 'title';
+  [...G.queue, ...G.leaving, ...G.orders.map(o => o.cust)].forEach(c => c.dispose());
+  G.queue = []; G.leaving = []; G.orders = []; G.selId = null;
+  bowlWings.forEach(w => SAUCE_ST.wingsGroup.remove(w)); bowlWings.length = 0;
+  G.bowl = { count:0, cook:0, sauce:null, coat:0 };
+  SAUCE_ST.liquid.visible = false;
+  renderTickets(); renderPlate(null);
+  $('bubble').classList.remove('show');
+  AudioFX.sizzleOff();
+  if (loadGame()) $('startBtn').textContent = `CONTINUE, DAY ${G.day}`;
+  goView('title', .6);
   $('titleScreen').classList.remove('hidden');
+}
+$('menuOpenBtn').onclick = openPause;
+$('resumeBtn').onclick = () => { AudioFX.click(); closePause(); };
+$('quitBtn').onclick = () => {
+  AudioFX.click();
+  saveGame();
+  $('pauseMenu').classList.add('hidden');
+  G._resumeState = null;
+  resetToTitle();
+};
+addEventListener('keydown', e => {
+  if (e.code !== 'Escape') return;
+  const subOpen = !$('menuShop').classList.contains('hidden') ? 'menuShop'
+    : !$('menuHelp').classList.contains('hidden') ? 'menuHelp' : null;
+  if (subOpen) {                       // back out of shop/how-to first
+    AudioFX.click();
+    $(subOpen).classList.add('hidden');
+    $(menuReturn).classList.remove('hidden');
+  } else if (G.state === 'day') openPause();
+  else if (G.state === 'paused') closePause();
 });
 
 /* title screen */
 const hasSave = loadGame();
 if (hasSave) {
-  $('startBtn').textContent = `CONTINUE — DAY ${G.day}`;
+  $('startBtn').textContent = `CONTINUE, DAY ${G.day}`;
   $('newGameBtn').classList.remove('hidden');
 }
 $('startBtn').onclick = () => { AudioFX.init(); $('titleScreen').classList.add('hidden'); startDay(); };
@@ -2738,15 +3004,15 @@ renderer.setAnimationLoop((t) => {
       }
     }
     const decay = G.upgrades.charm ? .65 : 1;
-    // queue patience
+    // queue patience (impatient traits tick down faster via patienceRate)
     G.queue.forEach((c) => {
       if (c.state === 'waiting' || c.state === 'queued')
-        c.patience = Math.max(6, c.patience - dt*1.0*decay);
+        c.patience = Math.max(6, c.patience - dt*1.0*decay*c.patienceRate);
       if (c.patience < 40 && c.state !== 'walking') c.setExpression('grumpy');
     });
     // waiting-for-food patience (each active order)
     if (!G.serving) G.orders.forEach(o => {
-      o.cust.patience = Math.max(6, o.cust.patience - dt*.7*decay);
+      o.cust.patience = Math.max(6, o.cust.patience - dt*.7*decay*o.cust.patienceRate);
       if (o.cust.patience < 35) o.cust.setExpression('grumpy');
     });
     // refresh ticket-rail patience bars a few times a second
@@ -2766,14 +3032,14 @@ renderer.setAnimationLoop((t) => {
     if (showBtn) {
       const s = worldToScreen(first.headPos());
       $('takeOrderBtn').style.left = s.x + 'px';
-      $('takeOrderBtn').style.top = (s.y - 96) + 'px';
+      $('takeOrderBtn').style.top = (s.y - 118) + 'px';
     }
     document.querySelector('[data-view=counter]').classList.toggle('alert', !!(canTake && curView !== 'counter'));
     // speech bubble follows its customer
     if ($('bubble').classList.contains('show') && bubbleCust) {
       const s = worldToScreen(bubbleCust.headPos());
       $('bubble').style.left = s.x + 'px';
-      $('bubble').style.top = (s.y - 16) + 'px';
+      $('bubble').style.top = (s.y - 24) + 'px';
       bubbleTimer -= dt;
       if (bubbleTimer <= 0) $('bubble').classList.remove('show');
     }
@@ -2820,7 +3086,7 @@ renderer.setAnimationLoop((t) => {
         ui.state.textContent = b.count === 0 ? 'empty'
           : !b.lowered && b.cook === 0 ? `${b.count} raw wings ready`
           : b.cook < .85 ? 'cooking…'
-          : b.cook <= 1.12 ? '✨ GOLDEN — pull now!'
+          : b.cook <= 1.12 ? '✨ GOLDEN, PULL IT!'
           : b.cook <= 1.3 ? '⚠ getting dark!'
           : '🔥 BURNT!';
         ui.state.style.color = b.cook > 1.12 && b.count ? '#ff8a70' : '#ffc14d';

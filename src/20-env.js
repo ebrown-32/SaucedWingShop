@@ -305,7 +305,10 @@ function updateCity(dt) {
         if (d) b.lit[i] = Math.abs(d) < .04 ? b.litT[i] : b.lit[i] + Math.sign(d)*Math.min(Math.abs(d), step/1.5);
       }
   }
-  drawCity(); // redraw every frame so traffic glides instead of stuttering
+  // redraw the canvas every frame on desktop (smooth traffic); throttle to
+  // ~22fps on mobile to spare the GPU the texture re-upload each frame
+  cityState.drawAcc = (cityState.drawAcc || 0) + dt;
+  if (!IS_MOBILE || cityState.drawAcc >= .045) { cityState.drawAcc = 0; drawCity(); }
 }
 drawCity();
 const winMat = new THREE.MeshStandardMaterial({ map: cityTex, emissive:0xffffff, emissiveMap: cityTex, emissiveIntensity:.55 });
@@ -441,8 +444,11 @@ scene.add(box(11, .45, .1, M.red, 0, 1.0, 3.42)); // accent stripe
   scene.add(cyl(.06, .09, 1, M.steelDark, x, .5, 4.3));
 });
 
-/* ---- dining tables ---- */
-[[-7, 8.5], [7, 8.5], [-9.5, 12.5], [12, 11], [0, 12.5]].forEach(([x, z]) => {
+/* ---- dining tables ----
+   kept in the back dining area (z >= 9.5, x <= 7) so they never sit in the
+   customer flow: the queue/wait zone hugs the counter (z < 7.5) and the
+   entrance lane runs down the right side (x > 9.5). */
+[[-7.5, 9.8], [7, 10.5], [-8, 13.5], [0, 13], [5.5, 14]].forEach(([x, z]) => {
   scene.add(cyl(1.15, 1.15, .1, M.red, x, 1.5, z));
   scene.add(cyl(.09, .14, 1.5, M.steelDark, x, .75, z));
   [[1.6, 0], [-1.6, 0], [0, 1.6], [0, -1.6]].forEach(([dx, dz]) => {
@@ -450,7 +456,7 @@ scene.add(box(11, .45, .1, M.red, 0, 1.0, 3.42)); // accent stripe
     scene.add(cyl(.05, .07, .8, M.steelDark, x+dx, .4, z+dz));
   });
 });
-// potted plants in corners
+// potted plants in corners (clear of the entrance lane)
 [[-13, 2.5], [13, 2.5], [-13, 15.5], [-2, 15.8]].forEach(([x, z]) => {
   scene.add(cyl(.4, .3, .6, new THREE.MeshStandardMaterial({ color:0xb05a2a, roughness:.8 }), x, .3, z));
   const leaves = new THREE.Mesh(new THREE.SphereGeometry(.62, 10, 8),
