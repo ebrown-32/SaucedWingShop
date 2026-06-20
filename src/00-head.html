@@ -55,11 +55,25 @@
   #ticketRail {
     position:fixed; left:max(14px, env(safe-area-inset-left)); top:74px; z-index:21; width:218px;
     display:none; flex-direction:column; gap:8px;
-    max-height:calc(100dvh - 230px); overflow-y:auto; padding-right:2px;
   }
   #ticketRail.show { display:flex; }
-  #ticketRail::-webkit-scrollbar { width:5px; }
-  #ticketRail::-webkit-scrollbar-thumb { background:rgba(245,239,230,.2); border-radius:3px; }
+  #railHeader {
+    align-self:flex-start; display:flex; align-items:center; gap:6px; pointer-events:auto; cursor:pointer;
+    background:var(--panel); border:1px solid var(--line); color:var(--cream-dim);
+    border-radius:9px; padding:6px 11px; font-family:var(--body); font-weight:700;
+    font-size:11px; letter-spacing:.12em; backdrop-filter:blur(8px);
+  }
+  #railHeader:hover { color:var(--cream); }
+  #railCount { color:var(--hot); font-family:var(--display); }
+  .railChev { transition:transform .2s; font-size:9px; }
+  #ticketRail.collapsed .railChev { transform:rotate(-90deg); }
+  #ticketRail.collapsed #ticketCards { display:none; }
+  #ticketCards {
+    display:flex; flex-direction:column; gap:8px;
+    max-height:calc(100vh - 270px); overflow-y:auto; padding-right:2px;
+  }
+  #ticketCards::-webkit-scrollbar { width:5px; }
+  #ticketCards::-webkit-scrollbar-thumb { background:rgba(245,239,230,.2); border-radius:3px; }
   .ticketCard {
     background:var(--cream); color:#241c14; border-radius:5px; padding:9px 11px 10px;
     box-shadow:0 8px 20px rgba(0,0,0,.45); cursor:pointer; position:relative;
@@ -309,11 +323,13 @@
     #stationNav button { padding:9px 11px; font-size:11px; gap:5px; }
     /* lift the controls clear of the nav bar + home indicator */
     #controls { bottom:max(78px, calc(env(safe-area-inset-bottom) + 76px)); gap:7px; }
-    .panel { padding:10px 11px; }
-    .panel h4 { font-size:9.5px; }
-    .meter { width:158px; }
-    #coatWrap { width:180px; }
-    #ticketRail { top:max(62px, calc(env(safe-area-inset-top) + 52px)); width:158px; max-height:calc(100dvh - 230px); }
+    .panel { padding:9px 10px; }
+    .panel h4 { font-size:9.5px; margin-bottom:6px; }
+    .panel .note { display:none; }       /* the world is the tutorial on mobile */
+    .meter { width:150px; }
+    #coatWrap { width:170px; }
+    #ticketRail { top:max(62px, calc(env(safe-area-inset-top) + 52px)); width:160px; }
+    #ticketCards { max-height:calc(100vh - 250px); }
     .ticketCard { padding:8px 9px; }
     .tcRow { font-size:11px; }
     .bigbtn { font-size:14px; padding:11px 18px; }
@@ -326,16 +342,34 @@
     .menuRow { gap:7px; }
   }
   @media (max-width: 540px) {
+    /* tighter HUD */
+    .pill { padding:5px 8px; font-size:11px; gap:5px; }
+    .pill .lab { font-size:7.5px; letter-spacing:.1em; }
+    #moneyLabel { font-size:13px; }
     /* scale the whole bottom control cluster down so it always fits */
     #controls { transform:translateX(-50%) scale(.82); transform-origin:bottom center; }
-    #fryControls, #sauceControls, #buildControls { flex-wrap:wrap; justify-content:center; max-width:97vw; }
-    #ticketRail { width:138px; }
+    #sauceControls, #buildControls { flex-wrap:wrap; justify-content:center; max-width:97vw; }
+    /* the two fryer baskets stay side by side, just shrunk to fit */
+    #fryControls { flex-wrap:nowrap; gap:6px; }
+    .basketCard { padding:7px 7px; }
+    .basketCard h4 { font-size:8.5px; margin-bottom:4px; }
+    .basketCard .meter { width:116px; height:12px; }
+    .basketCard .cookState { font-size:9px; height:13px; }
+    .basketCard .btnrow { gap:4px; }
+    .basketCard .sbtn { padding:6px 7px; font-size:9.5px; letter-spacing:.02em; gap:3px; }
+    /* compact, collapsible tickets: only the selected one shows its checklist */
+    #ticketRail { width:150px; }
+    #railHeader { padding:5px 9px; font-size:10px; }
+    .ticketCard { padding:7px 9px; }
+    .ticketCard:not(.sel) .tcRows { display:none; }
+    .ticketCard:not(.sel) .tcPat { margin-bottom:1px; }
     .tcHead { font-size:11px; }
     .tcTag { display:none; }
     #takeOrderBtn { font-size:13px; padding:9px 14px; }
   }
   @media (max-height: 560px) {
-    #ticketRail { top:max(54px, env(safe-area-inset-top)); max-height:calc(100dvh - 130px); }
+    #ticketRail { top:max(54px, env(safe-area-inset-top)); }
+    #ticketCards { max-height:calc(100vh - 150px); }
     #controls { bottom:max(60px, calc(env(safe-area-inset-bottom) + 58px)); }
     #hint { display:none; }
   }
@@ -344,13 +378,12 @@
     #topbar { top:max(5px, env(safe-area-inset-top)); }
     #ticketRail { top:max(46px, env(safe-area-inset-top)); }
   }
-  /* touch devices: fatten tap targets and drop hover-only chrome */
+  /* touch devices: drop hover-only chrome, keep nav taps comfortable */
   @media (pointer: coarse) {
     #hoverLabel { display:none !important; }
     #stationNav button { padding:11px 14px; }
-    .sbtn { padding:11px 14px; font-size:12.5px; }
+    .sbtn { padding:10px 13px; }
     .menuBtn { padding:13px 18px; }
-    .ticketCard { padding:11px 12px; }
   }
   /* fine pointers (desktop/trackpad) get a grab cursor on the world */
   @media (hover: hover) and (pointer: fine) { #c { cursor:grab; } }
@@ -383,7 +416,10 @@
   <div class="pill" id="menuOpenBtn" title="Menu &amp; shop"><svg class="ico"><use href="#i-menu"/></svg></div>
 </div>
 
-<div id="ticketRail"></div>
+<div id="ticketRail">
+  <button id="railHeader"><span id="railCount">0</span> TICKETS<span class="railChev">▾</span></button>
+  <div id="ticketCards"></div>
+</div>
 
 <div id="stationName"></div>
 <div id="hint"></div>

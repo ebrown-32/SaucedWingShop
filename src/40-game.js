@@ -103,7 +103,9 @@ function reqProgress(req, p) {
 /* ---- ticket rail (one card per active order) ---- */
 function renderTickets() {
   const rail = $('ticketRail');
-  rail.innerHTML = '';
+  const wrap = $('ticketCards');
+  wrap.innerHTML = '';
+  $('railCount').textContent = G.orders.length;
   G.orders.forEach(o => {
     const { rows, done } = reqProgress(o.req, o.plate);
     const card = document.createElement('div');
@@ -115,10 +117,11 @@ function renderTickets() {
       <div class="tcRows">${rows.map(r =>
         `<div class="tcRow ${r.ok ? 'ok' : ''}">${r.html}<span class="tcProg">${r.prog}</span></div>`).join('')}</div>`;
     card.onclick = () => selectOrder(o.id);
-    rail.appendChild(card);
+    wrap.appendChild(card);
   });
   rail.classList.toggle('show', G.orders.length > 0);
 }
+$('railHeader').onclick = () => { AudioFX.click(); $('ticketRail').classList.toggle('collapsed'); };
 function selectOrder(id) {
   if (G.selId === id) return;
   G.selId = id;
@@ -173,6 +176,7 @@ function spawnCustomer() {
        (G.queue[0] === c && c.state === 'waiting' && G.orders.length < maxOrders())),
      () => c.orderId != null ? `${c.name} · ${c.trait.label}` : `Take ${c.name}'s order`);
   AudioFX.ding();
+  openDoor();   // the door swings as they step in
   restage();
 }
 // route everyone in the queue to their slot; newcomers come in via the lane
@@ -621,7 +625,7 @@ function evaluateServe(o) {
     c.orderId = null;
     c.state = 'leaving';
     // walk out via the clear lane so they don't cut through the dining tables
-    c.movePath([ENTRY_WP, DOOR_POS], () => { c.dispose(); G.leaving.splice(G.leaving.indexOf(c), 1); });
+    c.movePath([ENTRY_WP, DOOR_POS], () => { openDoor(); c.dispose(); G.leaving.splice(G.leaving.indexOf(c), 1); });
     G.leaving.push(c);
     // pick another order to show, reset the plate prop home
     G.selId = G.orders.length ? G.orders[0].id : null;
@@ -970,8 +974,8 @@ renderer.setAnimationLoop((t) => {
     });
   }
   updateCity(dt);
-  neonMat.opacity = .92 + Math.sin(t*.004)*.05 + (Math.random() < .012 ? -.4 : 0);
-  neonLight.intensity = 16 + Math.sin(t*.004)*3;
+  neonMat.opacity = .95 + Math.sin(t*.004)*.04 + (Math.random() < .006 ? -.25 : 0);
+  neonLight.intensity = 5 + Math.sin(t*.004)*1;
   lampLights.forEach((l, i) => l.intensity = 11 + Math.sin(t*.002 + i*2)*1.2);
   if (disco.visible) {
     disco.rotation.y = t*.001;

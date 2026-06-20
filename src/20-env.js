@@ -110,9 +110,10 @@ scene.add(keyLight);
   pl.position.set(x, 4.3, -0.6);
   scene.add(pl);
 });
-// pendant lamps over the dining tables
+// pendant lamps, hung over the dining tables and kept off the centered sign's
+// sightline from the counter (no lamp at x≈0 in the back)
 const lampLights = [];
-[[-7, 8.5], [7, 8.5], [0, 12.5]].forEach(([x, z]) => {
+[[-7.5, 9.8], [7, 10.5], [-8, 13.5], [5.5, 14]].forEach(([x, z]) => {
   const pl = new THREE.PointLight(0xffb35c, 12, 9, 1.8);
   pl.position.set(x, 4.4, z);
   scene.add(pl);
@@ -170,10 +171,14 @@ function makeWallWithHoles(w, h, thickness, holes) {
 }
 scene.add(box(30, 8, .4, wallMat, 0, 4, -8.2, false));            // back wall (solid)
 scene.add(box(30, 2.2, .5, wallMat2, 0, 1.1, -8.15, false));
-scene.add(box(30, 2.2, .5, wallMat2, 0, 1.1, 17.1, false));       // front wainscot
-// front wall with three window openings (door area at x=11.5 stays solid)
-const frontWall = makeWallWithHoles(30, 8, .4,
-  [-11.5, -5, 5].map(x => ({ x, y: -0.4, w: 3.72, h: 2.72 })));
+// front wainscot, split around the doorway opening at x = 11.5 (10.5..12.5)
+scene.add(box(22.5, 2.2, .5, wallMat2, -2.25, 1.1, 17.1, false));
+scene.add(box(2.5, 2.2, .5, wallMat2, 13.75, 1.1, 17.1, false));
+// front wall: three window openings + a real doorway opening at x = 11.5
+const frontWall = makeWallWithHoles(30, 8, .4, [
+  ...[-11.5, -5, 5].map(x => ({ x, y: -0.4, w: 3.72, h: 2.72 })),
+  { x: 11.5, y: -2.3, w: 2.0, h: 3.4 },   // door opening (floor to 3.4)
+]);
 frontWall.position.set(0, 4, 17.2);
 scene.add(frontWall);
 // side walls, local x maps to world z (z = 6 and 11), so x = ±(z-4)
@@ -372,29 +377,34 @@ function addWindow(x, y, z, w, h, rotY) {
 [6, 11].forEach(z => addWindow(-14.3, 3.6, z, 3.2, 2.4, Math.PI/2));
 [6, 11].forEach(z => addWindow(14.3, 3.6, z, 3.2, 2.4, -Math.PI/2));
 
-/* ---- neon sign (front wall, facing the kitchen) ---- */
+/* ---- neon sign (mounted on the front wall, facing the kitchen) ---- */
 const neonTex = makeCanvas(1024, 256, (g) => {});
 function drawNeon() {
   const g = neonTex.image.getContext('2d');
   g.clearRect(0, 0, 1024, 256);
-  g.font = '120px "Bungee", "Arial Black", sans-serif';
+  g.font = '128px "Bungee", "Arial Black", sans-serif';
   g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.shadowColor = '#ff5d2a'; g.shadowBlur = 45;
-  g.lineWidth = 9; g.strokeStyle = '#ffb35c';
-  g.strokeText('SAUCED!', 512, 132);
-  g.shadowBlur = 18; g.fillStyle = '#fff0d0';
-  g.fillText('SAUCED!', 512, 132);
+  // crisp double-stroke neon tube: tight glow, bright core
+  g.shadowColor = '#ff6a2a'; g.shadowBlur = 22;
+  g.lineWidth = 13; g.strokeStyle = '#ff7a3a';
+  g.strokeText('SAUCED!', 512, 134);
+  g.shadowBlur = 10; g.lineWidth = 7; g.strokeStyle = '#ffd9a8';
+  g.strokeText('SAUCED!', 512, 134);
+  g.shadowBlur = 0; g.fillStyle = '#fff6e8';
+  g.fillText('SAUCED!', 512, 134);
   neonTex.needsUpdate = true;
 }
 drawNeon();
+// a dark mounting board so the tubes pop, sitting flush on the wall
+scene.add(box(8.2, 2.2, .12, new THREE.MeshStandardMaterial({ color:0x16140f, roughness:.6 }), 0, 5.5, 17.02, false));
 const neonMat = new THREE.MeshBasicMaterial({ map: neonTex, transparent: true });
-const neon = new THREE.Mesh(new THREE.PlaneGeometry(8, 2), neonMat);
-neon.position.set(0, 5.9, 16.9);
+const neon = new THREE.Mesh(new THREE.PlaneGeometry(7.4, 1.85), neonMat);
+neon.position.set(0, 5.5, 16.94);
 neon.rotation.y = Math.PI;
 scene.add(neon);
-scene.add(box(8.6, 2.3, .15, M.black, 0, 5.9, 17.0, false));
-const neonLight = new THREE.PointLight(0xff7a3a, 18, 14, 1.6);
-neonLight.position.set(0, 5.5, 14.5);
+// a tight halo on the board behind the tubes, not a wash across the whole room
+const neonLight = new THREE.PointLight(0xff7a3a, 5, 5.5, 2);
+neonLight.position.set(0, 5.5, 16.4);
 scene.add(neonLight);
 
 /* ---- menu boards flanking the neon ---- */
@@ -674,16 +684,63 @@ discoLights[0].position.set(-6, 5, 6);
 discoLights[1].position.set(6, 5, 6);
 discoLights.forEach(l => scene.add(l));
 
-/* ---- entrance door, in the front wall ---- */
+/* ---- entrance: a real glass door that swings open as folks come and go ---- */
 const DOOR_POS = new THREE.Vector3(11.5, 0, 15.6);
-scene.add(box(2.6, 4.6, .3, M.woodDark, 11.5, 2.3, 17.05, false));
-const doorSignTex = makeCanvas(256, 128, (g) => {
-  g.fillStyle = '#f2e2c4'; g.fillRect(0,0,256,128);
-  g.fillStyle = '#9c3a16'; g.font = '52px "Bungee", Arial';
-  g.textAlign = 'center'; g.fillText('OPEN', 128, 86);
-});
-const doorSign = new THREE.Mesh(new THREE.PlaneGeometry(1.3, .65),
-  new THREE.MeshStandardMaterial({ map: doorSignTex }));
-doorSign.position.set(11.5, 3.4, 16.85);
-doorSign.rotation.y = Math.PI;
-scene.add(doorSign);
+const DOOR = {};
+{
+  const cx = 11.5, dW = 2.0, dH = 3.4, innerZ = 17.0, jamb = .2;
+  // the dusk street, seen through the doorway
+  const backdrop = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 4.4),
+    new THREE.MeshStandardMaterial({ map: cityTex, emissive:0xffffff, emissiveMap: cityTex, emissiveIntensity:.6 }));
+  backdrop.position.set(cx, 2.0, 17.75);
+  scene.add(backdrop);
+  const outsideLight = new THREE.PointLight(0xffc890, 5, 7, 1.8);
+  outsideLight.position.set(cx, 2.6, 18.0);
+  scene.add(outsideLight);
+  // painted frame around the opening
+  const frameMat = new THREE.MeshStandardMaterial({ color:0xb83a22, roughness:.5 });
+  scene.add(box(jamb, dH + jamb, .36, frameMat, cx - dW/2 - jamb/2, dH/2, innerZ));
+  scene.add(box(jamb, dH + jamb, .36, frameMat, cx + dW/2 + jamb/2, dH/2, innerZ));
+  scene.add(box(dW + jamb*2, jamb, .36, frameMat, cx, dH + jamb/2, innerZ));
+  // hinged slab (hinge at the right jamb); built from x=0 leftwards to x=-dW
+  const slab = new THREE.Group();
+  slab.position.set(cx + dW/2, 0, innerZ + .04);
+  const stileMat = new THREE.MeshStandardMaterial({ color:0xf0ead8, roughness:.45 });
+  const sW = .15, t = .08, mid = -dW/2;
+  slab.add(box(sW, dH, t, stileMat, 0, dH/2, 0));               // hinge stile
+  slab.add(box(sW, dH, t, stileMat, -dW, dH/2, 0));             // free stile
+  slab.add(box(dW, sW, t, stileMat, mid, dH - sW/2, 0));        // top rail
+  slab.add(box(dW, sW, t, stileMat, mid, 1.05, 0));             // mid rail
+  slab.add(box(dW, sW, t, stileMat, mid, sW/2, 0));             // bottom rail
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(dW - sW, dH - 1.05 - sW),
+    new THREE.MeshStandardMaterial({ color:0xbcd2da, transparent:true, opacity:.32, roughness:.1, metalness:.1, side:THREE.DoubleSide }));
+  glass.position.set(mid, (1.05 + dH)/2, 0);
+  slab.add(glass);
+  slab.add(box(dW - sW, .95, t*.7, new THREE.MeshStandardMaterial({ color:0xb83a22, roughness:.55 }), mid, .55, 0)); // kick panel
+  const openTex = makeCanvas(256, 128, (g) => {
+    g.fillStyle = '#1c1a17'; g.fillRect(0,0,256,128);
+    g.fillStyle = '#ff6a3a'; g.font = '60px "Bungee", Arial';
+    g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('OPEN', 128, 70);
+  });
+  const openSign = new THREE.Mesh(new THREE.PlaneGeometry(1.0, .5),
+    new THREE.MeshStandardMaterial({ map: openTex, transparent:true, emissive:0xff6a3a, emissiveIntensity:.5, side:THREE.DoubleSide }));
+  openSign.position.set(mid, 2.3, .06);
+  slab.add(openSign);
+  const handle = new THREE.Mesh(new THREE.CylinderGeometry(.04, .04, 1.1, 10),
+    new THREE.MeshStandardMaterial({ color:0xd9dde2, metalness:.9, roughness:.3 }));
+  handle.position.set(-dW + .2, 1.55, .12);
+  slab.add(handle);
+  slab.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  scene.add(slab);
+  DOOR.slab = slab;
+  // welcome mat just inside
+  scene.add(box(2.0, .04, 1.1, new THREE.MeshStandardMaterial({ color:0x6e2818, roughness:.95 }), cx, .02, 15.3));
+}
+// swing the door inward and let it ease shut (called when a customer enters/exits)
+function openDoor() {
+  killTweens('door');
+  tween(2.4, k => {
+    const a = Math.sin(clamp(k*1.35, 0, 1)*Math.PI); // open, hold, close
+    DOOR.slab.rotation.y = -1.15*a;
+  }, { tag: 'door', ease: t => t });
+}
