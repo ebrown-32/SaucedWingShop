@@ -32,16 +32,17 @@ const camera = new THREE.PerspectiveCamera(46, innerWidth/innerHeight, 0.1, 100)
 camera.position.set(0, 7, 18);
 const camTarget = new THREE.Vector3(0, 2, 0);
 
-// keep a roughly constant *horizontal* field of view so wide stations stay in
-// frame on tall portrait phones (vertical fov widens as the screen narrows)
+// widen the vertical fov a touch on tall portrait screens so wide stations
+// still fit, but cap it well short of a fishbowl: mobile stays intimate (~60°)
+// and leans on drag-to-look for the rest, rather than a distorted wide angle
 function resize() {
   const aspect = innerWidth/innerHeight;
   camera.aspect = aspect;
   let vfov = 46 * Math.PI/180;
-  const minHFov = 60 * Math.PI/180;
+  const minHFov = (IS_MOBILE ? 50 : 60) * Math.PI/180;
   const hfov = 2*Math.atan(Math.tan(vfov/2)*aspect);
   if (hfov < minHFov) vfov = 2*Math.atan(Math.tan(minHFov/2)/aspect);
-  camera.fov = clamp(vfov*180/Math.PI, 40, 80);
+  camera.fov = clamp(vfov*180/Math.PI, 40, IS_MOBILE ? 60 : 78);
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 }
@@ -94,12 +95,12 @@ const VIEWS = {
   sauce:   { pos: new THREE.Vector3(0, 4.5, -3.6), tgt: new THREE.Vector3(0, 1.4, 0) },
   build:   { pos: new THREE.Vector3(6.4, 4.5, -3.6), tgt: new THREE.Vector3(6.35, 1.4, 0) },
 };
-// on mobile the wider fov zooms out, so dolly the work-station cameras in a bit
-// to enlarge the tap targets, and lift the aim on sauce/build so the pots and
-// bins (which sit behind the bowl/plate) stay comfortably in frame
+// on mobile, lift the aim on sauce/build so the pots and bins (behind the
+// bowl/plate) stay in frame; the tighter fov already supplies the intimacy, so
+// only a gentle dolly is needed to keep tap targets a comfortable size
 if (IS_MOBILE) {
-  VIEWS.sauce.tgt.y += .28; VIEWS.build.tgt.y += .28;
-  const dolly = { counter: .05, fry: .18, sauce: .14, build: .16 };
+  VIEWS.sauce.tgt.y += .38; VIEWS.build.tgt.y += .38;
+  const dolly = { counter: .04, fry: .1, sauce: .07, build: .09 };
   for (const k in dolly) VIEWS[k].pos.lerp(VIEWS[k].tgt, dolly[k]);
 }
 let curView = 'title';
