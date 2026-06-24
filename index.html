@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>SAUCED: Wing Shop Simulator</title>
+<title>SAUCED! The 3D Wing Shop</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -316,11 +316,19 @@
     .meter { width:175px; }
   }
   @media (max-width: 760px) {
-    #topbar { gap:5px; top:max(8px, env(safe-area-inset-top)); flex-wrap:wrap; justify-content:center; }
+    /* info pills hug the left, the menu button lives in the top-right corner */
+    #topbar { gap:5px; top:max(8px, env(safe-area-inset-top));
+      left:max(8px, env(safe-area-inset-left)); right:52px; transform:none;
+      flex-wrap:wrap; justify-content:flex-start; }
     .pill { padding:6px 10px; font-size:12px; }
     .pill .lab { font-size:8px; }
-    #stationNav { gap:3px; padding:5px; }
-    #stationNav button { padding:9px 11px; font-size:11px; gap:5px; }
+    #menuOpenBtn { position:fixed; z-index:30;
+      top:max(8px, env(safe-area-inset-top)); right:max(8px, env(safe-area-inset-right)); }
+    /* the bottom nav goes icon-only so all four stations always fit */
+    #stationNav { gap:4px; padding:5px; }
+    #stationNav button { padding:10px 13px; gap:0; }
+    #stationNav button .navlabel, #stationNav button .key { display:none; }
+    #stationNav button .ico { width:21px; height:21px; }
     /* lift the controls clear of the nav bar + home indicator */
     #controls { bottom:max(78px, calc(env(safe-area-inset-bottom) + 76px)); gap:7px; }
     .panel { padding:9px 10px; }
@@ -328,8 +336,8 @@
     .panel .note { display:none; }       /* the world is the tutorial on mobile */
     .meter { width:150px; }
     #coatWrap { width:170px; }
-    #ticketRail { top:max(62px, calc(env(safe-area-inset-top) + 52px)); width:160px; }
-    #ticketCards { max-height:calc(100vh - 250px); }
+    #ticketRail { top:max(96px, calc(env(safe-area-inset-top) + 84px)); width:160px; }
+    #ticketCards { max-height:calc(100vh - 280px); }
     .ticketCard { padding:8px 9px; }
     .tcRow { font-size:11px; }
     .bigbtn { font-size:14px; padding:11px 18px; }
@@ -457,10 +465,10 @@
 </div>
 
 <div id="stationNav">
-  <button data-view="counter"><svg class="ico"><use href="#i-bell"/></svg>COUNTER<span class="key">1</span></button>
-  <button data-view="fry"><svg class="ico"><use href="#i-flame"/></svg>FRY<span class="key">2</span></button>
-  <button data-view="sauce"><svg class="ico"><use href="#i-drop"/></svg>SAUCE<span class="key">3</span></button>
-  <button data-view="build"><svg class="ico"><use href="#i-plate"/></svg>PLATE<span class="key">4</span></button>
+  <button data-view="counter"><svg class="ico"><use href="#i-bell"/></svg><span class="navlabel">COUNTER</span><span class="key">1</span></button>
+  <button data-view="fry"><svg class="ico"><use href="#i-flame"/></svg><span class="navlabel">FRY</span><span class="key">2</span></button>
+  <button data-view="sauce"><svg class="ico"><use href="#i-drop"/></svg><span class="navlabel">SAUCE</span><span class="key">3</span></button>
+  <button data-view="build"><svg class="ico"><use href="#i-plate"/></svg><span class="navlabel">PLATE</span><span class="key">4</span></button>
 </div>
 
 <div id="toasts"></div>
@@ -478,7 +486,7 @@
       </g>
     </svg>
     <h1>SAUCED!</h1>
-    <p class="tag">Wing Shop Simulator</p>
+    <p class="tag">THE 3D WING SHOP</p>
     <p>Fry 'em golden. Toss 'em saucy. Plate 'em pretty.<br>Keep the regulars grinning and the tips rolling in.</p>
     <div class="menuBtns">
       <button class="bigbtn" id="startBtn">OPEN THE SHOP</button>
