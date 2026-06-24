@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>SAUCED: Wing Shop Simulator</title>
+<title>SAUCED! The 3D Wing Shop</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 <style>
@@ -478,7 +478,7 @@
       </g>
     </svg>
     <h1>SAUCED!</h1>
-    <p class="tag">Wing Shop Simulator</p>
+    <p class="tag">THE 3D WING SHOP</p>
     <p>Fry 'em golden. Toss 'em saucy. Plate 'em pretty.<br>Keep the regulars grinning and the tips rolling in.</p>
     <div class="menuBtns">
       <button class="bigbtn" id="startBtn">OPEN THE SHOP</button>
@@ -605,10 +605,10 @@ function resize() {
   const aspect = innerWidth/innerHeight;
   camera.aspect = aspect;
   let vfov = 46 * Math.PI/180;
-  const minHFov = (IS_MOBILE ? 50 : 60) * Math.PI/180;
+  const minHFov = (IS_MOBILE ? 44 : 60) * Math.PI/180;
   const hfov = 2*Math.atan(Math.tan(vfov/2)*aspect);
   if (hfov < minHFov) vfov = 2*Math.atan(Math.tan(minHFov/2)/aspect);
-  camera.fov = clamp(vfov*180/Math.PI, 40, IS_MOBILE ? 60 : 78);
+  camera.fov = clamp(vfov*180/Math.PI, 40, IS_MOBILE ? 52 : 78);
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 }
@@ -666,7 +666,8 @@ const VIEWS = {
 // only a gentle dolly is needed to keep tap targets a comfortable size
 if (IS_MOBILE) {
   VIEWS.sauce.tgt.y += .38; VIEWS.build.tgt.y += .38;
-  const dolly = { counter: .04, fry: .1, sauce: .07, build: .09 };
+  // dolly the cameras meaningfully closer so the shop feels intimate, not distant
+  const dolly = { counter: .2, fry: .24, sauce: .16, build: .18 };
   for (const k in dolly) VIEWS[k].pos.lerp(VIEWS[k].tgt, dolly[k]);
 }
 let curView = 'title';
@@ -1529,16 +1530,21 @@ const FRYER = { baskets: [] };
       upY, downY, oilPos: new THREE.Vector3(fx+dx, 2.56, fz), oilY: 2.56, bubbleT: 0,
     });
   });
-  // raw wing tub beside the fryer
-  scene.add(box(1.2, .5, 1.2, new THREE.MeshStandardMaterial({ color:0xd9e2e8, roughness:.5 }), fx-2.6, 1.81, fz+.1));
-  FRYER.tubPos = new THREE.Vector3(fx-2.6, 2.06, fz+.1);
-  for (let i = 0; i < 6; i++) {
+  // raw wing tub beside the fryer, click it to load a basket
+  const tub = new THREE.Group();
+  tub.add(box(1.2, .5, 1.2, new THREE.MeshStandardMaterial({ color:0xd9e2e8, roughness:.5 }), 0, .25, 0));
+  for (let i = 0; i < 7; i++) {
     const w = makeWingMesh(0xe8a89b);
-    w.position.set(fx-2.6+rand(-.32,.32), 2.08, fz+.1+rand(-.32,.32));
+    w.position.set(rand(-.32,.32), .52, rand(-.32,.32));
     w.rotation.y = rand(Math.PI*2);
     w.scale.setScalar(.85);
-    scene.add(w);
+    tub.add(w);
   }
+  tub.position.set(fx-2.6, 1.56, fz+.1);
+  scene.add(tub);
+  FRYER.tub = tub;
+  FRYER.tubPos = new THREE.Vector3(fx-2.6, 2.08, fz+.1);
+  registerClick(tub, () => addWingsToAvailable(), () => curView === 'fry', 'Grab wings, load a basket');
 }
 
 /* ============================================================
@@ -2476,11 +2482,29 @@ function buildFryUI() {
     ui.send.onclick = () => sendToSauce(b);
     fryUI[i] = ui; // indexed by basket so the cook loop can find it
     cards.push({ card, x: b.group.position.x });
-    registerClick(b.group, () => toggleBasket(b, ui), () => curView === 'fry',
-      () => b.lowered ? 'Raise the basket' : b.count ? 'Drop into the oil' : 'Fryer basket (add wings first)');
+    // tap a raised basket to keep piling in wings; tap a full/cooking one (or
+    // use DROP) to lower it, and tap a lowered one to raise it
+    registerClick(b.group,
+      () => {
+        if (b.lowered) toggleBasket(b, ui);
+        else if (b.count < basketCap() && b.cook < .25) addWings(b);
+        else toggleBasket(b, ui);
+      },
+      () => curView === 'fry',
+      () => b.lowered ? 'Raise the basket'
+          : (b.count < basketCap() && b.cook < .25) ? 'Tap to add wings'
+          : 'Drop into the oil');
   });
   // the fry camera faces +z, so larger world-x renders further LEFT on screen.
   cards.sort((a, b) => b.x - a.x).forEach(c => root.appendChild(c.card));
+}
+// load wings into a basket you've already started, else the next empty one
+function addWingsToAvailable() {
+  let target = FRYER.baskets.find(b => b.count > 0 && b.count < basketCap() && !b.lowered && b.cook < .25);
+  if (!target) target = FRYER.baskets.find(b => b.count === 0 && !b.lowered);
+  if (!target) { showToast('Both baskets are busy, cook or send them!', 'bad'); return; }
+  addWings(target);
+  if (FRYER.tub) tween(.25, k => { FRYER.tub.position.y = 1.56 + Math.sin(k*Math.PI)*.07; }, { ease: t => t });
 }
 function addWings(b) {
   if (b.count >= basketCap()) { showToast("That basket's packed tight!", 'bad'); return; }
@@ -2945,7 +2969,7 @@ function updateHUD() {
 }
 const HINTS = {
   counter: 'Tap a customer in line to take their order. Tap a seated one to work their ticket.',
-  fry: "Drop a basket, then yank it up while the meter's sitting in the green.",
+  fry: "Tap a basket to pile in wings, drop it, then yank it up in the green.",
   sauce: "Pour a pot, toss till they're drenched, then send 'em to your ticket.",
   build: 'Pick a ticket, pile on the sides, dip and garnish, then send it out hot.',
 };

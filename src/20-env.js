@@ -520,16 +520,21 @@ const FRYER = { baskets: [] };
       upY, downY, oilPos: new THREE.Vector3(fx+dx, 2.56, fz), oilY: 2.56, bubbleT: 0,
     });
   });
-  // raw wing tub beside the fryer
-  scene.add(box(1.2, .5, 1.2, new THREE.MeshStandardMaterial({ color:0xd9e2e8, roughness:.5 }), fx-2.6, 1.81, fz+.1));
-  FRYER.tubPos = new THREE.Vector3(fx-2.6, 2.06, fz+.1);
-  for (let i = 0; i < 6; i++) {
+  // raw wing tub beside the fryer, click it to load a basket
+  const tub = new THREE.Group();
+  tub.add(box(1.2, .5, 1.2, new THREE.MeshStandardMaterial({ color:0xd9e2e8, roughness:.5 }), 0, .25, 0));
+  for (let i = 0; i < 7; i++) {
     const w = makeWingMesh(0xe8a89b);
-    w.position.set(fx-2.6+rand(-.32,.32), 2.08, fz+.1+rand(-.32,.32));
+    w.position.set(rand(-.32,.32), .52, rand(-.32,.32));
     w.rotation.y = rand(Math.PI*2);
     w.scale.setScalar(.85);
-    scene.add(w);
+    tub.add(w);
   }
+  tub.position.set(fx-2.6, 1.56, fz+.1);
+  scene.add(tub);
+  FRYER.tub = tub;
+  FRYER.tubPos = new THREE.Vector3(fx-2.6, 2.08, fz+.1);
+  registerClick(tub, () => addWingsToAvailable(), () => curView === 'fry', 'Grab wings, load a basket');
 }
 
 /* ============================================================

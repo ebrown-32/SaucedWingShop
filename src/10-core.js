@@ -39,10 +39,10 @@ function resize() {
   const aspect = innerWidth/innerHeight;
   camera.aspect = aspect;
   let vfov = 46 * Math.PI/180;
-  const minHFov = (IS_MOBILE ? 50 : 60) * Math.PI/180;
+  const minHFov = (IS_MOBILE ? 44 : 60) * Math.PI/180;
   const hfov = 2*Math.atan(Math.tan(vfov/2)*aspect);
   if (hfov < minHFov) vfov = 2*Math.atan(Math.tan(minHFov/2)/aspect);
-  camera.fov = clamp(vfov*180/Math.PI, 40, IS_MOBILE ? 60 : 78);
+  camera.fov = clamp(vfov*180/Math.PI, 40, IS_MOBILE ? 52 : 78);
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 }
@@ -100,7 +100,8 @@ const VIEWS = {
 // only a gentle dolly is needed to keep tap targets a comfortable size
 if (IS_MOBILE) {
   VIEWS.sauce.tgt.y += .38; VIEWS.build.tgt.y += .38;
-  const dolly = { counter: .04, fry: .1, sauce: .07, build: .09 };
+  // dolly the cameras meaningfully closer so the shop feels intimate, not distant
+  const dolly = { counter: .2, fry: .24, sauce: .16, build: .18 };
   for (const k in dolly) VIEWS[k].pos.lerp(VIEWS[k].tgt, dolly[k]);
 }
 let curView = 'title';

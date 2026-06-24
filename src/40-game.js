@@ -258,11 +258,29 @@ function buildFryUI() {
     ui.send.onclick = () => sendToSauce(b);
     fryUI[i] = ui; // indexed by basket so the cook loop can find it
     cards.push({ card, x: b.group.position.x });
-    registerClick(b.group, () => toggleBasket(b, ui), () => curView === 'fry',
-      () => b.lowered ? 'Raise the basket' : b.count ? 'Drop into the oil' : 'Fryer basket (add wings first)');
+    // tap a raised basket to keep piling in wings; tap a full/cooking one (or
+    // use DROP) to lower it, and tap a lowered one to raise it
+    registerClick(b.group,
+      () => {
+        if (b.lowered) toggleBasket(b, ui);
+        else if (b.count < basketCap() && b.cook < .25) addWings(b);
+        else toggleBasket(b, ui);
+      },
+      () => curView === 'fry',
+      () => b.lowered ? 'Raise the basket'
+          : (b.count < basketCap() && b.cook < .25) ? 'Tap to add wings'
+          : 'Drop into the oil');
   });
   // the fry camera faces +z, so larger world-x renders further LEFT on screen.
   cards.sort((a, b) => b.x - a.x).forEach(c => root.appendChild(c.card));
+}
+// load wings into a basket you've already started, else the next empty one
+function addWingsToAvailable() {
+  let target = FRYER.baskets.find(b => b.count > 0 && b.count < basketCap() && !b.lowered && b.cook < .25);
+  if (!target) target = FRYER.baskets.find(b => b.count === 0 && !b.lowered);
+  if (!target) { showToast('Both baskets are busy, cook or send them!', 'bad'); return; }
+  addWings(target);
+  if (FRYER.tub) tween(.25, k => { FRYER.tub.position.y = 1.56 + Math.sin(k*Math.PI)*.07; }, { ease: t => t });
 }
 function addWings(b) {
   if (b.count >= basketCap()) { showToast("That basket's packed tight!", 'bad'); return; }
@@ -727,7 +745,7 @@ function updateHUD() {
 }
 const HINTS = {
   counter: 'Tap a customer in line to take their order. Tap a seated one to work their ticket.',
-  fry: "Drop a basket, then yank it up while the meter's sitting in the green.",
+  fry: "Tap a basket to pile in wings, drop it, then yank it up in the green.",
   sauce: "Pour a pot, toss till they're drenched, then send 'em to your ticket.",
   build: 'Pick a ticket, pile on the sides, dip and garnish, then send it out hot.',
 };
