@@ -1,44 +1,57 @@
-# 🍗 SAUCED! — The 3D Wing Shop
+# 🍗 SAUCED: Wing Shop Simulator
 
-A 3D wing-shop time-management game inspired by Papa's Wingeria, built with
-Three.js. Everything — models, textures, faces, sound effects, and music — is
-generated procedurally in code; there are no asset files.
+A fast, juicy 3D wing-shop time-management game inspired by Papa's Wingeria,
+built with Three.js. Every model, texture, cartoon face, sound effect, and the
+background music is generated procedurally in code. There are no asset files,
+just one self-contained HTML page.
+
+Claude Fable essentially one shotted this...
 
 ## Play
 
-Open **`index.html`** in any modern browser (double-click works — Three.js
-loads from a CDN, so you need an internet connection).
+Open **`index.html`** in any modern browser. Double-clicking works, though
+Three.js loads from a CDN, so you do need an internet connection. It runs on
+desktop and on phones; the whole interface reflows for touch.
 
-### How to play
+## How it works
 
-You play in first person from behind the counter, looking out at your
-customers and dining room. **Drag anywhere on the screen to look around.**
-Everything in the shop is clickable — hover for labels. The title screen has a
-**Shop** (spend saved earnings on upgrades any time), a **How to Play**
-tutorial, and **Credits**.
+You run the shop in first person from behind the counter, looking out at the
+line of customers and the dining room. **Drag anywhere to look around.** Almost
+everything in the shop is interactive: tap the baskets, pots, bins, dip cups,
+and customers directly. Hover on desktop for a label.
 
-1. **Counter** — customers line up; click one to take their ticket. You can
-   juggle **several orders at once** — they stack as cards on the left. Click a
-   card (or a waiting customer, or press `Tab`) to select which order you're
-   working on.
-2. **Fry in bulk** — load wings into a basket, click to drop it into the oil,
-   click again to pull it up in the green *golden* zone. Cook a big batch to
-   fill several tickets at once.
-3. **Sauce** — send a basket to the bowl, click a pot to pour, then toss (click
-   the bowl, press Space, or flick upward) until fully coated.
-4. **Plate smart** — "Send to plate" moves only the wings the *selected* ticket
-   still needs, leaving the rest in the bowl for the next plate. Add sides, a
-   dip, and a **garnish** to match. Neat, exact, complete plates earn a
-   presentation bonus.
-5. **Serve** — accuracy and speed earn stars, tips, and perfect-streak bonuses.
+1. **Counter.** Customers walk in and line up. Tap one to take their ticket.
+   You can run **several orders at once**; they stack as receipt cards on the
+   left. Tap a card, a waiting customer, or press `Tab` to choose which order
+   you are building.
+2. **Fry.** Tap a basket (or the tub of raw wings) to pile wings in, drop the
+   basket into the oil, then pull it up while the cook meter is in the green
+   *golden* zone. Burn them and the rating tanks. Cook a big batch to fill
+   several tickets at once.
+3. **Sauce.** Send a basket to the bowl, tap a pot to pour a sauce, then toss
+   until the wings are fully coated. Toss by tapping the bowl, pressing `Space`,
+   or flicking upward across it.
+4. **Plate.** "Send to plate" moves only the wings the **selected** ticket still
+   needs and leaves the rest of the saucy batch in the bowl for the next plate.
+   Add the sides, dip, and garnish the ticket asks for. A neat, exact, complete
+   plate earns a presentation bonus.
+5. **Serve.** Accuracy and speed earn stars, tips, and perfect-streak bonuses.
+
+Customers have **personality traits** that change how they behave: the rushed
+ones fidget and tip for speed, the chill ones wait forever, foodies want the
+full garnished plate and tip big, big tippers are rare and generous, and grumps
+are impatient and hard to please.
 
 Each day brings more customers and unlocks new sauces, sides, dips, and
-garnishes. Spend earnings on upgrades — Jumbo Baskets (bulk frying), Extra Hand
-(more concurrent orders), Turbo Fryer, Golden Tongs, Sauce Boss, Charm School,
-Loyalty Cards, Disco Night. Progress autosaves to your browser, and the whole
-UI reflows for phones, tablets, and desktops.
+garnishes (14 sauces in all by the late game). Spend your earnings on upgrades
+like Jumbo Baskets for bulk frying, Extra Hand for another concurrent order,
+Turbo Fryer, Golden Tongs, Sauce Boss, Charm School, Loyalty Cards, and Disco
+Night. The shop, a how-to-play guide, and a pause menu are reachable any time
+from the menu button (top right on mobile) or by pressing `Esc`. Progress
+autosaves to your browser.
 
-Keyboard: `1`–`4` stations · `Tab` switch ticket · `Space` toss wings.
+**Keyboard:** `1` to `4` switch stations, `Tab` cycles the selected ticket,
+`Space` tosses the wings, `Esc` opens the menu.
 
 ## Development
 
@@ -47,18 +60,19 @@ parts in `src/`:
 
 | part | contents |
 |---|---|
-| `00-head.html` | HTML, CSS, UI overlay DOM |
-| `10-core.js`   | renderer, camera/tween system, input, synth audio, particles |
-| `20-env.js`    | game data + the 3D shop (kitchen, stations, dining room) |
-| `30-actors.js` | procedural wings, sides, and customers |
-| `40-game.js`   | orders, station logic, scoring, day cycle, main loop |
+| `00-head.html` | HTML, CSS, and the UI overlay markup |
+| `10-core.js`   | renderer, camera and tween system, input, synth audio, particles |
+| `20-env.js`    | game data plus the 3D shop (kitchen, stations, dining room, door) |
+| `30-actors.js` | procedural wings, sides, garnishes, and customers |
+| `40-game.js`   | orders, station logic, scoring, day cycle, and the main loop |
 
-After editing a part, rebuild with:
+After editing a part, rebuild the bundle with:
 
 ```sh
 ./build.sh
 ```
 
-`tools/shot.py` renders staged screenshots through headless Firefox for
-visual verification (note: headless Firefox never composites WebGL into
-`--screenshot`, so the tool mirrors the frame into a DOM `<img>` first).
+`tools/shot.py` renders staged screenshots through headless Firefox for visual
+checks. Note that headless Firefox never composites WebGL into its
+`--screenshot` output, so the tool mirrors the rendered frame into a DOM image
+first, and it disables CSS animations so elements do not freeze mid-transition.
